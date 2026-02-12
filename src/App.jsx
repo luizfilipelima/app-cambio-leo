@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Smartphone, Truck, X, Save, ChevronDown, Moon, Sun } from 'lucide-react';
+import { Settings, Smartphone, Truck, X, Save, ChevronDown } from 'lucide-react';
 
 // --- Configuration & Constants ---
 const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || '';
@@ -116,11 +116,6 @@ export default function App() {
   const [contactCountryCode, setContactCountryCode] = useState('55');
   const [contactPhone, setContactPhone] = useState('');
 
-  // Tema: 'dark' | 'light' (persistido em localStorage)
-  const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem('leo-cambios-theme') || 'dark'; } catch { return 'dark'; }
-  });
-
   // Admin State
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [adminPassInput, setAdminPassInput] = useState('');
@@ -133,12 +128,10 @@ export default function App() {
 
   // --- Effects ---
 
-  // Aplicar tema (classe dark no html) e persistir
+  // Tema escuro fixo (classe dark no html)
   useEffect(() => {
-    const isDark = theme === 'dark';
-    document.documentElement.classList.toggle('dark', isDark);
-    try { localStorage.setItem('leo-cambios-theme', theme); } catch (_) {}
-  }, [theme]);
+    document.documentElement.classList.add('dark');
+  }, []);
 
   // Carregar cotações PYG e USD (GET /api/cotacao)
   useEffect(() => {
@@ -745,9 +738,9 @@ Contato: ${formatContactForWhatsApp()}`;
                     <div className="p-2 bg-[#2E7D32]/10 rounded-xl">
                       <Settings size={20} className="text-[#2E7D32]" />
                     </div>
-                    <h2 className="text-2xl font-black text-gray-900 dark:text-white">Configurações</h2>
+                    <h2 className="text-2xl font-black text-white">Admin</h2>
                   </div>
-                  <p className="text-xs text-gray-500">Tema e área administrativa</p>
+                  <p className="text-xs text-gray-500">Área Administrativa</p>
                 </div>
                 <button 
                   onClick={() => {
@@ -755,46 +748,13 @@ Contato: ${formatContactForWhatsApp()}`;
                     setIsAuthenticated(false);
                     setAdminPassInput('');
                   }} 
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-gray-200 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 active:bg-gray-300 dark:active:text-white dark:active:bg-gray-800 transition-all"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-gray-800/50 text-gray-400 active:text-white active:bg-gray-800 transition-all"
                   aria-label="Fechar"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              {/* Tema: Modo escuro / Modo claro */}
-              <div className="mb-6">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 ml-1 uppercase tracking-wider">Tema</p>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setTheme('dark')}
-                    className={`flex-1 min-h-[48px] flex items-center justify-center gap-2 rounded-xl border-2 text-sm font-bold transition-all touch-manipulation ${
-                      theme === 'dark'
-                        ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-white dark:text-white'
-                        : 'border-gray-700 dark:border-gray-700 bg-gray-100 dark:bg-[#0f0f0f] text-gray-600 dark:text-gray-400'
-                    }`}
-                  >
-                    <Moon size={18} />
-                    Modo escuro
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTheme('light')}
-                    className={`flex-1 min-h-[48px] flex items-center justify-center gap-2 rounded-xl border-2 text-sm font-bold transition-all touch-manipulation ${
-                      theme === 'light'
-                        ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-gray-900 dark:text-white'
-                        : 'border-gray-700 dark:border-gray-700 bg-gray-100 dark:bg-[#0f0f0f] text-gray-600 dark:text-gray-400'
-                    }`}
-                  >
-                    <Sun size={18} />
-                    Modo claro
-                  </button>
-                </div>
-              </div>
-
-              {/* Admin */}
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 ml-1 uppercase tracking-wider">Admin</p>
               {!isAuthenticated ? (
                 <div className="space-y-5">
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
