@@ -36,6 +36,7 @@ const arredondarParaNotas = (valorPYG) => {
 // Formatting
 const formatBRL = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 const formatPYG = (val) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(val);
+const formatUSD = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(val);
 
 const parseCurrency = (str) => {
   if (!str) return 0;
@@ -73,62 +74,92 @@ const formatPygInput = (value) => {
   }).format(intValue);
 };
 
+// USD input: decimais 0,00 (mesmo estilo que BRL)
+const formatUsdInput = (value) => {
+  if (!value) return '';
+  const numericValue = value.replace(/\D/g, '');
+  if (!numericValue) return '';
+  const floatValue = parseFloat(numericValue) / 100;
+  return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(floatValue);
+};
+
 export default function App() {
   // --- State ---
-  const [rate, setRate] = useState(null);
-  const [lastUpdate, setLastUpdate] = useState('');
+  const [ratePYG, setRatePYG] = useState(null);
+  const [rateUSD, setRateUSD] = useState(null);
+  const [updatedAtPyg, setUpdatedAtPyg] = useState('');
+  const [updatedAtUsd, setUpdatedAtUsd] = useState('');
   const [rateLoading, setRateLoading] = useState(true);
-  
+  const [exchangeType, setExchangeType] = useState('pyg'); // 'pyg' | 'usd'
+
   const [brlInput, setBrlInput] = useState('');
   const [pygInput, setPygInput] = useState('');
-  
+  const [usdInput, setUsdInput] = useState('');
+
   // Delivery: 'franco' | 'lago' | 'km4' | 'km7'
   const [deliveryType, setDeliveryType] = useState('franco');
-  
+
   // Calculated values for display
   const [finalPayBRL, setFinalPayBRL] = useState(0);
   const [finalReceivePYG, setFinalReceivePYG] = useState(0);
+  const [finalReceiveUSD, setFinalReceiveUSD] = useState(0);
   const [fees, setFees] = useState(0);
-  
+
   // Contato do cliente (para mensagem WhatsApp)
   const [contactCountryCode, setContactCountryCode] = useState('55');
   const [contactPhone, setContactPhone] = useState('');
-  
+
   // Admin State
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [adminPassInput, setAdminPassInput] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [newRateInput, setNewRateInput] = useState('');
+  const [newRatePygInput, setNewRatePygInput] = useState('');
+  const [newRateUsdInput, setNewRateUsdInput] = useState('');
+
+  const rate = exchangeType === 'pyg' ? ratePYG : rateUSD;
+  const lastUpdate = exchangeType === 'pyg' ? updatedAtPyg : updatedAtUsd;
 
   // --- Effects ---
 
-  // Carregar cotação do Vercel KV (GET /api/cotacao)
+  // Carregar cotações PYG e USD (GET /api/cotacao)
   useEffect(() => {
     setRateLoading(true);
     fetch(`${API_BASE}/cotacao`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data && typeof data.rate === 'number') {
-          setRate(data.rate);
-          setLastUpdate(data.updatedAt ? new Date(data.updatedAt).toLocaleString() : '');
-        } else {
-          setRate(null);
-          setLastUpdate('');
+        if (!data) {
+          setRatePYG(null);
+          setRateUSD(null);
+          setUpdatedAtPyg('');
+          setUpdatedAtUsd('');
+          return;
         }
+        // Nova API: pyg, usd, updatedAtPyg, updatedAtUsd
+        const pyg = typeof data.pyg === 'number' ? data.pyg : (typeof data.rate === 'number' ? data.rate : null);
+        const usd = typeof data.usd === 'number' ? data.usd : null;
+        setRatePYG(pyg);
+        setRateUSD(usd);
+        setUpdatedAtPyg(data.updatedAtPyg ? new Date(data.updatedAtPyg).toLocaleString() : (data.updatedAt ? new Date(data.updatedAt).toLocaleString() : ''));
+        setUpdatedAtUsd(data.updatedAtUsd ? new Date(data.updatedAtUsd).toLocaleString() : '');
       })
       .catch(() => {
-        setRate(null);
-        setLastUpdate('');
+        setRatePYG(null);
+        setRateUSD(null);
+        setUpdatedAtPyg('');
+        setUpdatedAtUsd('');
       })
       .finally(() => setRateLoading(false));
   }, []);
 
-  // Calculation Effect
+  // Calculation Effect (PYG ou USD conforme exchangeType)
   useEffect(() => {
-    // If fields are empty, reset
-    if (!brlInput && !pygInput) {
+    const currentRate = exchangeType === 'pyg' ? ratePYG : rateUSD;
+    const hasReceiveInput = exchangeType === 'pyg' ? !!pygInput : !!usdInput;
+
+    if (!brlInput && !hasReceiveInput) {
       setFinalPayBRL(0);
       setFinalReceivePYG(0);
+      setFinalReceiveUSD(0);
       setFees(0);
       return;
     }
@@ -136,121 +167,94 @@ export default function App() {
     const deliveryOption = DELIVERY_OPTIONS.find((o) => o.id === deliveryType) || DELIVERY_OPTIONS[0];
     const deliveryFee = deliveryOption.fee;
 
-    // SCENARIO 1: User typed in BRL (Master)
-    // We calculate the theoretical PYG, round it, then back-calculate the exact BRL needed.
-    if (brlInput && !pygInput) {
-      const rawBrl = parseCurrency(brlInput);
-      if (rawBrl === 0) return;
-
-      // 1. Initial Estimate of Fee
-      let estimatedFee = calcularTaxaServico(rawBrl);
-      
-      // 2. Net Amount for Exchange
-      let netBrl = rawBrl - estimatedFee - deliveryFee;
-      if (netBrl < 0) netBrl = 0;
-
-      // 3. Convert to PYG and Round
-      let rawPyg = netBrl * rate;
-      let roundedPyg = arredondarParaNotas(rawPyg);
-
-      // 4. Reverse Calculate Exact BRL needed for this Rounded PYG
-      let exactNetBrl = roundedPyg / rate;
-      
-      // 5. Re-calculate Fee based on new Total (Iterative approach to stabilize)
-      // Total = Net + Fee(Total) + Delivery
-      // We assume Fee is based on the Total Paid by customer.
-      let finalTotalBrl = exactNetBrl + deliveryFee;
-      
-      // Add fee (first pass)
-      finalTotalBrl += calcularTaxaServico(finalTotalBrl);
-      
-      // Check if bracket changed (second pass - usually enough)
-      let finalFee = calcularTaxaServico(finalTotalBrl);
-      finalTotalBrl = exactNetBrl + finalFee + deliveryFee;
-
-      setFinalPayBRL(finalTotalBrl);
-      setFinalReceivePYG(roundedPyg);
-      setFees(finalFee);
-    } 
-    
-    // SCENARIO 2: User typed in PYG (Master)
-    else if (pygInput && !brlInput) {
-      const rawPyg = parseCurrency(pygInput);
-      if (rawPyg === 0) return;
-
-      // 1. Round input immediately to valid notes
-      const roundedPyg = arredondarParaNotas(rawPyg);
-      
-      // 2. Convert to Net BRL
-      const netBrl = roundedPyg / rate;
-
-      // 3. Calculate Total BRL required
-      let totalBrl = netBrl + deliveryFee;
-      // Add fee estimate
-      totalBrl += calcularTaxaServico(totalBrl);
-      // Re-calc fee on new total
-      const finalFee = calcularTaxaServico(totalBrl);
-      totalBrl = netBrl + finalFee + deliveryFee;
-
-      setFinalPayBRL(totalBrl);
-      setFinalReceivePYG(roundedPyg);
-      setFees(finalFee);
+    if (exchangeType === 'pyg' && currentRate != null) {
+      if (brlInput && !pygInput) {
+        const rawBrl = parseCurrency(brlInput);
+        if (rawBrl === 0) return;
+        let estimatedFee = calcularTaxaServico(rawBrl);
+        let netBrl = rawBrl - estimatedFee - deliveryFee;
+        if (netBrl < 0) netBrl = 0;
+        let rawPyg = netBrl * currentRate;
+        let roundedPyg = arredondarParaNotas(rawPyg);
+        let exactNetBrl = roundedPyg / currentRate;
+        let finalTotalBrl = exactNetBrl + deliveryFee;
+        finalTotalBrl += calcularTaxaServico(finalTotalBrl);
+        let finalFee = calcularTaxaServico(finalTotalBrl);
+        finalTotalBrl = exactNetBrl + finalFee + deliveryFee;
+        setFinalPayBRL(finalTotalBrl);
+        setFinalReceivePYG(roundedPyg);
+        setFinalReceiveUSD(0);
+        setFees(finalFee);
+      } else if (pygInput && !brlInput) {
+        const rawPyg = parseCurrency(pygInput);
+        if (rawPyg === 0) return;
+        const roundedPyg = arredondarParaNotas(rawPyg);
+        const netBrl = roundedPyg / currentRate;
+        let totalBrl = netBrl + deliveryFee;
+        totalBrl += calcularTaxaServico(totalBrl);
+        const finalFee = calcularTaxaServico(totalBrl);
+        totalBrl = netBrl + finalFee + deliveryFee;
+        setFinalPayBRL(totalBrl);
+        setFinalReceivePYG(roundedPyg);
+        setFinalReceiveUSD(0);
+        setFees(finalFee);
+      }
+      return;
     }
 
-  }, [brlInput, pygInput, rate ?? 0, deliveryType]);
+    if (exchangeType === 'usd' && currentRate != null) {
+      if (brlInput && !usdInput) {
+        const rawBrl = parseCurrency(brlInput);
+        if (rawBrl === 0) return;
+        let estimatedFee = calcularTaxaServico(rawBrl);
+        let netBrl = rawBrl - estimatedFee - deliveryFee;
+        if (netBrl < 0) netBrl = 0;
+        const receiveUsd = netBrl * currentRate;
+        let finalTotalBrl = netBrl + deliveryFee;
+        finalTotalBrl += calcularTaxaServico(finalTotalBrl);
+        const finalFee = calcularTaxaServico(finalTotalBrl);
+        finalTotalBrl = netBrl + finalFee + deliveryFee;
+        setFinalPayBRL(finalTotalBrl);
+        setFinalReceivePYG(0);
+        setFinalReceiveUSD(receiveUsd);
+        setFees(finalFee);
+      } else if (usdInput && !brlInput) {
+        const rawUsd = parseCurrency(usdInput);
+        if (rawUsd === 0) return;
+        const netBrl = rawUsd / currentRate;
+        let totalBrl = netBrl + deliveryFee;
+        totalBrl += calcularTaxaServico(totalBrl);
+        const finalFee = calcularTaxaServico(totalBrl);
+        totalBrl = netBrl + finalFee + deliveryFee;
+        setFinalPayBRL(totalBrl);
+        setFinalReceivePYG(0);
+        setFinalReceiveUSD(rawUsd);
+        setFees(finalFee);
+      }
+    }
+  }, [brlInput, pygInput, usdInput, ratePYG, rateUSD, exchangeType, deliveryType]);
 
 
   // --- Handlers ---
 
   const handleBrlChange = (e) => {
-    let val = e.target.value;
-    
-    // If user is deleting and it becomes empty
+    const val = e.target.value;
     if (!val) {
       setBrlInput('');
       setPygInput('');
+      setUsdInput('');
       return;
     }
-
-    // Format the value as BRL currency
-    // Check if the new value is a valid currency format or partial
-    // Since we are formatting on change, we need to strip non-digits first
     const cleanVal = val.replace(/\D/g, '');
-    
     if (cleanVal === '') {
       setBrlInput('');
       setPygInput('');
+      setUsdInput('');
       return;
     }
-    
-    const floatVal = parseFloat(cleanVal) / 100;
-    const formatted = new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(floatVal);
-    
-    // Note: The Intl formatter includes "R$" sometimes or just the number depending on options.
-    // The previous formatBRL uses style: 'currency', currency: 'BRL' which includes "R$".
-    // Here we just want the number part like "2.000,00".
-    // So we use default pt-BR number format which uses dots and commas.
-    // But formatCurrencyInput above does exactly this if we don't specify currency style.
-    // Wait, the new formatCurrencyInput function I added uses default NumberFormat which returns "2.000,00".
-    
-    // Wait, I should use the function I just added.
-    // But I need to be careful with cursor position if I was implementing a full mask, 
-    // but for this simple implementation, replacing the whole value is fine.
-    
-    // Let's reuse formatCurrencyInput logic here inline or call it if I made it available.
-    // Since I added formatCurrencyInput outside component, I can use it.
-    
-    // However, there's a nuance: if I type "1", it becomes "0,01". 
-    // If I type "12", it becomes "0,12".
-    // This is the desired behavior for currency inputs often.
-    
-    // Let's implement this logic:
-    const formattedValue = formatCurrencyInput(val);
-    setBrlInput(formattedValue);
-    setPygInput(''); // Clear other
+    setBrlInput(formatCurrencyInput(val));
+    setPygInput('');
+    setUsdInput('');
   };
 
   const handlePygChange = (e) => {
@@ -258,30 +262,52 @@ export default function App() {
     if (!val) {
       setPygInput('');
       setBrlInput('');
+      setUsdInput('');
       return;
     }
     setPygInput(formatPygInput(val));
     setBrlInput('');
+    setUsdInput('');
+  };
+
+  const handleUsdChange = (e) => {
+    const val = e.target.value;
+    if (!val) {
+      setUsdInput('');
+      setBrlInput('');
+      setPygInput('');
+      return;
+    }
+    setUsdInput(formatUsdInput(val));
+    setBrlInput('');
+    setPygInput('');
   };
 
   const handleAdminLogin = () => {
     if (adminPassInput === ADMIN_PASS) {
       setIsAuthenticated(true);
-      setNewRateInput(rate != null ? rate.toString() : '');
+      setNewRatePygInput(ratePYG != null ? ratePYG.toString() : '');
+      setNewRateUsdInput(rateUSD != null ? rateUSD.toString() : '');
     } else {
       alert("Senha incorreta!");
     }
   };
 
   const handleSaveRate = async () => {
-    const newRate = parseFloat(newRateInput);
-    if (!Number.isFinite(newRate) || newRate <= 0) return;
+    const pyg = newRatePygInput === '' ? null : parseFloat(String(newRatePygInput).replace(',', '.'));
+    const usd = newRateUsdInput === '' ? null : parseFloat(String(newRateUsdInput).replace(',', '.'));
+    const hasPyg = Number.isFinite(pyg) && pyg > 0;
+    const hasUsd = Number.isFinite(usd) && usd > 0;
+    if (!hasPyg && !hasUsd) return;
 
     try {
+      const body = { password: adminPassInput };
+      if (hasPyg) body.pyg = pyg;
+      if (hasUsd) body.usd = usd;
       const res = await fetch(`${API_BASE}/cotacao`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rate: newRate, password: adminPassInput }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -294,8 +320,14 @@ export default function App() {
         return;
       }
 
-      setRate(data.rate);
-      setLastUpdate(data.updatedAt ? new Date(data.updatedAt).toLocaleString() : new Date().toLocaleString());
+      if (data.pyg != null) {
+        setRatePYG(data.pyg);
+        setUpdatedAtPyg(data.updatedAtPyg ? new Date(data.updatedAtPyg).toLocaleString() : new Date().toLocaleString());
+      }
+      if (data.usd != null) {
+        setRateUSD(data.usd);
+        setUpdatedAtUsd(data.updatedAtUsd ? new Date(data.updatedAtUsd).toLocaleString() : new Date().toLocaleString());
+      }
       setIsAdminOpen(false);
       setIsAuthenticated(false);
       setAdminPassInput('');
@@ -311,17 +343,21 @@ export default function App() {
     return `(+${contactCountryCode}${digits})`;
   };
 
-  // WhatsApp Link Generator (formato solicitado + Contato)
+  // WhatsApp Link Generator (formato solicitado + Contato; Guaraní ou Dólar)
   const getWhatsAppLink = () => {
     const opt = DELIVERY_OPTIONS.find((o) => o.id === deliveryType) || DELIVERY_OPTIONS[0];
+    const receiveText = exchangeType === 'pyg' ? formatPYG(finalReceivePYG) : formatUSD(finalReceiveUSD);
+    const cotacaoText = exchangeType === 'pyg'
+      ? `₲ ${ratePYG != null ? ratePYG : '—'}`
+      : `US$ ${rateUSD != null ? rateUSD : '—'}`;
     const text = `Olá Leo!
 Vou Trocar: ${formatBRL(finalPayBRL)}
-*Vou Receber: ${formatPYG(finalReceivePYG)}*
-Cotação Atual: ₲ ${rate != null ? rate : '—'}
+*Vou Receber: ${receiveText}*
+Cotação Atual: ${cotacaoText}
 Taxas: ${formatBRL(fees)}
 Entrega: ${opt.label} (${opt.fee === 0 ? 'Grátis' : formatBRL(opt.fee)})
 Contato: ${formatContactForWhatsApp()}`;
-    
+
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
   };
 
@@ -337,7 +373,7 @@ Contato: ${formatContactForWhatsApp()}`;
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-white truncate">Leo Câmbios</h1>
-              <p className="text-[10px] text-gray-500">BRL → PYG</p>
+              <p className="text-[10px] text-gray-500">BRL → PYG / USD</p>
             </div>
           </div>
           <button 
@@ -348,21 +384,45 @@ Contato: ${formatContactForWhatsApp()}`;
             <Settings size={20} />
           </button>
         </div>
-        {/* Cotação: carrega do KV; mostra valor ou Indisponível --- */}
-        <div className="flex items-center justify-between gap-2 bg-[#1E1E1E] border border-[#2E7D32]/30 rounded-xl px-4 py-3 w-full">
-          <span className="text-sm text-gray-400">Cotação</span>
-          <div className="flex items-center gap-2">
-            {rateLoading ? (
-              <span className="text-sm text-gray-500">Carregando…</span>
-            ) : rate != null ? (
-              <>
-                <span className="text-xl">🇵🇾</span>
-                <span className="text-xl sm:text-2xl font-black text-[#2E7D32]">{rate}</span>
-                <span className="text-[10px] text-gray-500">₲/R$</span>
-              </>
-            ) : (
-              <span className="text-sm text-gray-500">Indisponível</span>
-            )}
+        {/* Cotação: escolha Guaraní ou Dólar; mostra valor ou Indisponível */}
+        <div className="bg-[#1E1E1E] border border-[#2E7D32]/30 rounded-xl px-4 py-3 w-full space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm text-gray-400">Cotação</span>
+            <div className="flex items-center gap-2">
+              {rateLoading ? (
+                <span className="text-sm text-gray-500">Carregando…</span>
+              ) : rate != null ? (
+                <>
+                  <span className="text-xl">{exchangeType === 'pyg' ? '🇵🇾' : '🇺🇸'}</span>
+                  <span className="text-xl sm:text-2xl font-black text-[#2E7D32]">{rate}</span>
+                  <span className="text-[10px] text-gray-500">{exchangeType === 'pyg' ? '₲/R$' : 'US$/R$'}</span>
+                </>
+              ) : (
+                <span className="text-sm text-gray-500">Indisponível</span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { setExchangeType('pyg'); setBrlInput(''); setPygInput(''); setUsdInput(''); }}
+              className={`flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-xl border-2 text-sm font-bold transition-all touch-manipulation ${
+                exchangeType === 'pyg' ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-white' : 'border-gray-700 bg-[#0f0f0f] text-gray-400 active:border-gray-600'
+              }`}
+            >
+              <span>🇵🇾</span>
+              <span>Guaraní</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setExchangeType('usd'); setBrlInput(''); setPygInput(''); setUsdInput(''); }}
+              className={`flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-xl border-2 text-sm font-bold transition-all touch-manipulation ${
+                exchangeType === 'usd' ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-white' : 'border-gray-700 bg-[#0f0f0f] text-gray-400 active:border-gray-600'
+              }`}
+            >
+              <span>🇺🇸</span>
+              <span>Dólar</span>
+            </button>
           </div>
         </div>
         {lastUpdate && <p className="text-[9px] text-gray-600 text-right w-full">Atualizado {lastUpdate}</p>}
@@ -387,30 +447,50 @@ Contato: ${formatContactForWhatsApp()}`;
                   className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-700"
                 />
                 {brlInput && (
-                  <button onClick={() => { setBrlInput(''); setPygInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-white active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
+                  <button onClick={() => { setBrlInput(''); setPygInput(''); setUsdInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-white active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
                 )}
               </div>
             </div>
-            {/* PYG Input --- */}
+            {/* Receber: PYG ou USD conforme exchangeType */}
             <div className="relative">
-              <label className="block text-[10px] font-medium text-gray-400 mb-1 uppercase tracking-wider">Você recebe (PYG)</label>
+              <label className="block text-[10px] font-medium text-gray-400 mb-1 uppercase tracking-wider">
+                Você recebe ({exchangeType === 'pyg' ? 'PYG' : 'USD'})
+              </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-base">₲</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={pygInput}
-                  onChange={handlePygChange}
-                  placeholder="0"
-                  className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-700"
-                />
-                {pygInput && (
-                  <button onClick={() => { setPygInput(''); setBrlInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-white active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-base">{exchangeType === 'pyg' ? '₲' : 'US$'}</span>
+                {exchangeType === 'pyg' ? (
+                  <>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={pygInput}
+                      onChange={handlePygChange}
+                      placeholder="0"
+                      className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-700"
+                    />
+                    {pygInput && (
+                      <button onClick={() => { setPygInput(''); setBrlInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-white active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={usdInput}
+                      onChange={handleUsdChange}
+                      placeholder="0,00"
+                      className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-700"
+                    />
+                    {usdInput && (
+                      <button onClick={() => { setUsdInput(''); setBrlInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-white active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           </div>
-          <p className="text-[9px] text-gray-600 mt-2 ml-1">* Arredondamento para notas 50k/100k</p>
+          <p className="text-[9px] text-gray-600 mt-2 ml-1">{exchangeType === 'pyg' ? '* Arredondamento para notas 50k/100k' : ''}</p>
         </div>
 
         {/* Entrega: 4 opções, mesma estética */}
@@ -466,7 +546,7 @@ Contato: ${formatContactForWhatsApp()}`;
                   {finalPayBRL > 0 ? formatBRL(finalPayBRL) : 'R$ 0,00'}
                 </div>
               </div>
-              {/* Você Recebe: cinza sem valor, verde com valor */}
+              {/* Você Recebe: cinza sem valor, verde com valor (PYG ou USD) */}
               <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
                 finalPayBRL > 0 
                   ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/20' 
@@ -478,7 +558,9 @@ Contato: ${formatContactForWhatsApp()}`;
                 <div className={`text-lg font-black ${
                   finalPayBRL > 0 ? 'text-white' : 'text-gray-500'
                 }`}>
-                  {finalPayBRL > 0 ? formatPYG(finalReceivePYG) : '₲ 0'}
+                  {finalPayBRL > 0
+                    ? (exchangeType === 'pyg' ? formatPYG(finalReceivePYG) : formatUSD(finalReceiveUSD))
+                    : (exchangeType === 'pyg' ? '₲ 0' : 'US$ 0,00')}
                 </div>
               </div>
             </div>
@@ -629,25 +711,41 @@ Contato: ${formatContactForWhatsApp()}`;
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-2 ml-1 uppercase tracking-wider">
-                      Nova Cotação (₲ PYG)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">
-                        ₲
-                      </span>
-                      <input 
-                        type="number" 
-                        value={newRateInput}
-                        onChange={(e) => setNewRateInput(e.target.value)}
-                        placeholder="1450"
-                        className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base sm:text-2xl font-bold p-4 pl-14 rounded-2xl outline-none transition-all placeholder-gray-700"
-                      />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-2 ml-1 uppercase tracking-wider">
+                        Cotação PYG (₲/R$)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">₲</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={newRatePygInput}
+                          onChange={(e) => setNewRatePygInput(e.target.value)}
+                          placeholder="1450"
+                          className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base sm:text-2xl font-bold p-4 pl-14 rounded-2xl outline-none transition-all placeholder-gray-700"
+                        />
+                      </div>
+                      <p className="text-[10px] text-gray-600 mt-2 ml-1">Atual: ₲ {ratePYG != null ? ratePYG : '—'}</p>
                     </div>
-                    <p className="text-[10px] text-gray-600 mt-2 ml-1">
-                      Valor atual: ₲ {rate != null ? rate : '—'}
-                    </p>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-2 ml-1 uppercase tracking-wider">
+                        Cotação USD (US$/R$)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">US$</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={newRateUsdInput}
+                          onChange={(e) => setNewRateUsdInput(e.target.value)}
+                          placeholder="5,50"
+                          className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base sm:text-2xl font-bold p-4 pl-14 rounded-2xl outline-none transition-all placeholder-gray-700"
+                        />
+                      </div>
+                      <p className="text-[10px] text-gray-600 mt-2 ml-1">Atual: US$ {rateUSD != null ? rateUSD : '—'}</p>
+                    </div>
                   </div>
 
                   <button 

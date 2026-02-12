@@ -1,18 +1,15 @@
 /**
- * Vercel Serverless Function: cotação persistida em Redis.
- * Aceita:
- *   - REDIS_URL (Redis Labs / conexão TCP, ex: redis://default:senha@host:porta)
- *   - ou KV_REST_API_* / UPSTASH_REDIS_REST_* (REST)
- * GET  /api/cotacao → retorna { rate, updatedAt } ou 404
- * POST /api/cotacao → body { rate, password }; salva no Redis se senha correta
+ * Vercel Serverless Function: cotações PYG e USD persistidas em Redis.
+ * GET  /api/cotacao → retorna { pyg, usd, updatedAtPyg, updatedAtUsd }
+ * POST /api/cotacao → body { pyg?, usd?, password }; atualiza um ou ambos
  */
 
 import { Redis } from '@upstash/redis';
 import { createClient } from 'redis';
 
-const KEY = 'leo_cambios_cotacao';
+const KEY_PYG = 'leo_cambios_cotacao_pyg';
+const KEY_USD = 'leo_cambios_cotacao_usd';
 
-// --- Cliente Redis: REDIS_URL (TCP) ou Upstash (REST) ---
 let nodeRedisClient = null;
 
 async function getRedis() {
@@ -60,19 +57,20 @@ export default async function handler(req, res) {
   const redis = await getRedis();
   if (!redis) {
     return res.status(500).json({
-      error: 'Redis não configurado. Defina REDIS_URL ou (KV_REST_API_URL + KV_REST_API_TOKEN) ou (UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN) nas variáveis de ambiente.',
+      error: 'Redis não configurado. Defina REDIS_URL ou variáveis Upstash/KV.',
     });
   }
 
   if (req.method === 'GET') {
     try {
-      const data = await redis.get(KEY);
-      if (!data || typeof data.rate !== 'number') {
-        return res.status(404).json({ error: 'Cotação não definida' });
-      }
+      const [dataPyg, dataUsd] = await Promise.all([redis.get(KEY_PYG), redis.get(KEY_USD)]);
+      const pyg = dataPyg && typeof dataPyg.rate === 'number' ? dataPyg.rate : null;
+      const usd = dataUsd && typeof dataUsd.rate === 'number' ? dataUsd.rate : null;
       return res.status(200).json({
-        rate: data.rate,
-        updatedAt: data.updatedAt || null,
+        pyg,
+        usd,
+        updatedAtPyg: dataPyg?.updatedAt || null,
+        updatedAtUsd: dataUsd?.updatedAt || null,
       });
     } catch (err) {
       console.error('Redis GET error:', err);
@@ -83,25 +81,47 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-      const { rate, password } = body;
+      const { pyg, usd, password } = body;
 
       const adminPass = process.env.ADMIN_PASS || process.env.VITE_ADMIN_PASS || '';
       if (!adminPass) {
-        return res.status(500).json({ error: 'Configure ADMIN_PASS nas variáveis de ambiente da Vercel' });
+        return res.status(500).json({ error: 'Configure ADMIN_PASS nas variáveis de ambiente.' });
       }
       if (password !== adminPass) {
         return res.status(401).json({ error: 'Senha incorreta' });
       }
 
-      const numRate = parseFloat(rate);
-      if (!Number.isFinite(numRate) || numRate <= 0) {
-        return res.status(400).json({ error: 'Valor de cotação inválido' });
+      const now = new Date().toISOString();
+      const updates = {};
+
+      if (typeof pyg === 'number' || (pyg != null && pyg !== '')) {
+        const numPyg = parseFloat(pyg);
+        if (Number.isFinite(numPyg) && numPyg > 0) {
+          await redis.set(KEY_PYG, { rate: numPyg, updatedAt: now });
+          updates.pyg = numPyg;
+          updates.updatedAtPyg = now;
+        }
+      }
+      if (typeof usd === 'number' || (usd != null && usd !== '')) {
+        const numUsd = parseFloat(usd);
+        if (Number.isFinite(numUsd) && numUsd > 0) {
+          await redis.set(KEY_USD, { rate: numUsd, updatedAt: now });
+          updates.usd = numUsd;
+          updates.updatedAtUsd = now;
+        }
       }
 
-      const updatedAt = new Date().toISOString();
-      await redis.set(KEY, { rate: numRate, updatedAt });
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: 'Envie pyg e/ou usd com valor válido.' });
+      }
 
-      return res.status(200).json({ rate: numRate, updatedAt });
+      const [dataPyg, dataUsd] = await Promise.all([redis.get(KEY_PYG), redis.get(KEY_USD)]);
+      return res.status(200).json({
+        pyg: dataPyg?.rate ?? updates.pyg ?? null,
+        usd: dataUsd?.rate ?? updates.usd ?? null,
+        updatedAtPyg: dataPyg?.updatedAt ?? updates.updatedAtPyg ?? null,
+        updatedAtUsd: dataUsd?.updatedAt ?? updates.updatedAtUsd ?? null,
+      });
     } catch (err) {
       console.error('Redis POST error:', err);
       return res.status(500).json({ error: 'Erro ao salvar cotação' });
