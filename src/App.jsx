@@ -3,7 +3,7 @@ import { Settings, Smartphone, Truck, X, Save } from 'lucide-react';
 
 // --- Configuration & Constants ---
 const DEFAULT_RATE = 1450; // Default fallback
-const ADMIN_PASS = "AdminLeo2026C@";
+const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || '';
 const WHATSAPP_NUMBER = "595991413975";
 
 // --- Helper Functions ---
