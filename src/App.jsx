@@ -11,6 +11,13 @@ const COUNTRY_CODES = [
   { code: '595', emoji: '🇵🇾', label: 'Paraguai' },
 ];
 
+const DELIVERY_OPTIONS = [
+  { id: 'franco', label: 'Presidente Franco', fee: 0, subtitle: 'Grátis' },
+  { id: 'lago', label: 'Região do Lago', fee: 0, subtitle: 'Grátis' },
+  { id: 'km4', label: 'Região do Km4', fee: 5, subtitle: 'R$ 5,00' },
+  { id: 'km7', label: 'Região do Km7', fee: 10, subtitle: 'R$ 10,00' },
+];
+
 // --- Helper Functions ---
 
 // Fee Calculation Logic
@@ -75,8 +82,8 @@ export default function App() {
   const [brlInput, setBrlInput] = useState('');
   const [pygInput, setPygInput] = useState('');
   
-  // Delivery: 'free' (Franco/Lago) or 'paid' (Outros +10)
-  const [deliveryType, setDeliveryType] = useState('free');
+  // Delivery: 'franco' | 'lago' | 'km4' | 'km7'
+  const [deliveryType, setDeliveryType] = useState('franco');
   
   // Calculated values for display
   const [finalPayBRL, setFinalPayBRL] = useState(0);
@@ -126,7 +133,8 @@ export default function App() {
       return;
     }
 
-    const deliveryFee = deliveryType === 'paid' ? 10 : 0;
+    const deliveryOption = DELIVERY_OPTIONS.find((o) => o.id === deliveryType) || DELIVERY_OPTIONS[0];
+    const deliveryFee = deliveryOption.fee;
 
     // SCENARIO 1: User typed in BRL (Master)
     // We calculate the theoretical PYG, round it, then back-calculate the exact BRL needed.
@@ -305,12 +313,13 @@ export default function App() {
 
   // WhatsApp Link Generator (formato solicitado + Contato)
   const getWhatsAppLink = () => {
+    const opt = DELIVERY_OPTIONS.find((o) => o.id === deliveryType) || DELIVERY_OPTIONS[0];
     const text = `Olá Leo!
 Vou Trocar: ${formatBRL(finalPayBRL)}
 *Vou Receber: ${formatPYG(finalReceivePYG)}*
 Cotação Atual: ₲ ${rate != null ? rate : '—'}
 Taxas: ${formatBRL(fees)}
-Entrega: ${deliveryType === 'free' ? 'Franco / Lago' : 'Outros Locais'}
+Entrega: ${opt.label} (${opt.fee === 0 ? 'Grátis' : formatBRL(opt.fee)})
 Contato: ${formatContactForWhatsApp()}`;
     
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
@@ -404,37 +413,37 @@ Contato: ${formatContactForWhatsApp()}`;
           <p className="text-[9px] text-gray-600 mt-2 ml-1">* Arredondamento para notas 50k/100k</p>
         </div>
 
-        {/* Entrega: mobile first 1 col, sm 2 col; alvo de toque >= 48px */}
+        {/* Entrega: 4 opções, mesma estética */}
         <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
           <div className="flex items-center gap-2 mb-3">
             <Truck size={16} className="text-[#2E7D32]" />
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Entrega</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className={`flex items-center gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 cursor-pointer transition-all select-none touch-manipulation ${
-              deliveryType === 'free' ? 'border-[#2E7D32] bg-[#2E7D32]/10' : 'border-gray-800 bg-[#0f0f0f] active:border-gray-700'
-            }`}>
-              <input type="radio" name="delivery" value="free" checked={deliveryType === 'free'} onChange={() => setDeliveryType('free')} className="sr-only" />
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${deliveryType === 'free' ? 'border-[#2E7D32] bg-[#2E7D32]' : 'border-gray-600'}`}>
-                {deliveryType === 'free' && <div className="w-2 h-2 bg-white rounded-full"></div>}
-              </div>
-              <div className="min-w-0">
-                <span className="text-sm font-bold text-white block">📍 Franco / Lago</span>
-                <span className="text-[10px] text-gray-500">Grátis</span>
-              </div>
-            </label>
-            <label className={`flex items-center gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 cursor-pointer transition-all select-none touch-manipulation ${
-              deliveryType === 'paid' ? 'border-[#2E7D32] bg-[#2E7D32]/10' : 'border-gray-800 bg-[#0f0f0f] active:border-gray-700'
-            }`}>
-              <input type="radio" name="delivery" value="paid" checked={deliveryType === 'paid'} onChange={() => setDeliveryType('paid')} className="sr-only" />
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${deliveryType === 'paid' ? 'border-[#2E7D32] bg-[#2E7D32]' : 'border-gray-600'}`}>
-                {deliveryType === 'paid' && <div className="w-2 h-2 bg-white rounded-full"></div>}
-              </div>
-              <div className="min-w-0">
-                <span className="text-sm font-bold text-white block">🚚 Outros Locais</span>
-                <span className="text-[10px] text-gray-500">+R$ 10</span>
-              </div>
-            </label>
+            {DELIVERY_OPTIONS.map((opt) => (
+              <label
+                key={opt.id}
+                className={`flex items-center gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 cursor-pointer transition-all select-none touch-manipulation ${
+                  deliveryType === opt.id ? 'border-[#2E7D32] bg-[#2E7D32]/10' : 'border-gray-800 bg-[#0f0f0f] active:border-gray-700'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="delivery"
+                  value={opt.id}
+                  checked={deliveryType === opt.id}
+                  onChange={() => setDeliveryType(opt.id)}
+                  className="sr-only"
+                />
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${deliveryType === opt.id ? 'border-[#2E7D32] bg-[#2E7D32]' : 'border-gray-600'}`}>
+                  {deliveryType === opt.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-sm font-bold text-white block truncate">{opt.label}</span>
+                  <span className="text-[10px] text-gray-500">{opt.subtitle}</span>
+                </div>
+              </label>
+            ))}
           </div>
         </div>
 
@@ -477,7 +486,7 @@ Contato: ${formatContactForWhatsApp()}`;
               finalPayBRL > 0 ? 'text-gray-500' : 'text-gray-600'
             }`}>
               <span>Taxa: {finalPayBRL > 0 ? formatBRL(fees) : '—'}</span>
-              <span>Entrega: {finalPayBRL > 0 ? (deliveryType === 'paid' ? 'R$ 10' : 'Grátis') : '—'}</span>
+              <span>Entrega: {finalPayBRL > 0 ? (DELIVERY_OPTIONS.find((o) => o.id === deliveryType)?.subtitle ?? '—') : '—'}</span>
             </div>
             {finalPayBRL > 0 && (
               <div className="mb-3">
