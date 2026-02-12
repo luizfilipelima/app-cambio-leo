@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Smartphone, Truck, X, Save, ChevronDown } from 'lucide-react';
+import { Settings, Smartphone, Truck, X, Save, ChevronDown, Moon, Sun } from 'lucide-react';
 
 // --- Configuration & Constants ---
 const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || '';
@@ -116,6 +116,11 @@ export default function App() {
   const [contactCountryCode, setContactCountryCode] = useState('55');
   const [contactPhone, setContactPhone] = useState('');
 
+  // Tema: 'dark' | 'light' (persistido em localStorage)
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('leo-cambios-theme') || 'dark'; } catch { return 'dark'; }
+  });
+
   // Admin State
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [adminPassInput, setAdminPassInput] = useState('');
@@ -127,6 +132,13 @@ export default function App() {
   const lastUpdate = exchangeType === 'pyg' ? updatedAtPyg : updatedAtUsd;
 
   // --- Effects ---
+
+  // Aplicar tema (classe dark no html) e persistir
+  useEffect(() => {
+    const isDark = theme === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+    try { localStorage.setItem('leo-cambios-theme', theme); } catch (_) {}
+  }, [theme]);
 
   // Carregar cotações PYG e USD (GET /api/cotacao)
   useEffect(() => {
@@ -408,7 +420,7 @@ Contato: ${formatContactForWhatsApp()}`;
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-cambio-bg text-white font-sans flex flex-col items-center px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-lg mx-auto">
+    <div className="min-h-screen min-h-[100dvh] bg-gray-100 dark:bg-cambio-bg text-gray-900 dark:text-white font-sans flex flex-col items-center px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-lg mx-auto transition-colors">
       
       {/* --- Header: mobile first (empilha em telas pequenas) --- */}
       <header className="w-full flex flex-col gap-3 mb-4 relative">
@@ -418,22 +430,22 @@ Contato: ${formatContactForWhatsApp()}`;
               <span className="text-xl">💸</span>
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold text-white truncate">Leo Câmbios</h1>
-              <p className="text-[10px] text-gray-500">BRL → PYG / USD</p>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">Leo Câmbios</h1>
+              <p className="text-[10px] text-gray-500 dark:text-gray-500">BRL → PYG / USD</p>
             </div>
           </div>
           <button 
             onClick={() => setIsAdminOpen(true)}
-            className="shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-[#1E1E1E]/50 border border-gray-800 text-gray-500 active:text-white active:bg-[#1E1E1E] transition-all"
-            aria-label="Configurações Admin"
+            className="shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-white dark:bg-[#1E1E1E]/50 border border-gray-300 dark:border-gray-800 text-gray-600 dark:text-gray-500 active:text-gray-900 active:bg-gray-200 dark:active:text-white dark:active:bg-[#1E1E1E] transition-all shadow-sm dark:shadow-none"
+            aria-label="Configurações"
           >
             <Settings size={20} />
           </button>
         </div>
         {/* Cotação: escolha Guaraní ou Dólar; mostra valor ou Indisponível */}
-        <div className="bg-[#1E1E1E] border border-[#2E7D32]/30 rounded-xl px-4 py-3 w-full space-y-3">
+        <div className="bg-white dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E7D32]/30 rounded-xl px-4 py-3 w-full space-y-3 shadow-sm dark:shadow-none">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-gray-400">Cotação</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Cotação</span>
             <div className="flex items-center gap-2">
               {rateLoading ? (
                 <span className="text-sm text-gray-500">Carregando…</span>
@@ -453,7 +465,9 @@ Contato: ${formatContactForWhatsApp()}`;
               type="button"
               onClick={() => { setExchangeType('pyg'); setBrlInput(''); setPygInput(''); setUsdInput(''); }}
               className={`flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-xl border-2 text-sm font-bold transition-all touch-manipulation ${
-                exchangeType === 'pyg' ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-white' : 'border-gray-700 bg-[#0f0f0f] text-gray-400 active:border-gray-600'
+                exchangeType === 'pyg'
+                  ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-gray-900 dark:text-white'
+                  : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#0f0f0f] text-gray-500 dark:text-gray-400 active:border-gray-400 dark:active:border-gray-600'
               }`}
             >
               <span>🇵🇾</span>
@@ -463,7 +477,9 @@ Contato: ${formatContactForWhatsApp()}`;
               type="button"
               onClick={() => { setExchangeType('usd'); setBrlInput(''); setPygInput(''); setUsdInput(''); }}
               className={`flex-1 min-h-[44px] flex items-center justify-center gap-2 rounded-xl border-2 text-sm font-bold transition-all touch-manipulation ${
-                exchangeType === 'usd' ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-white' : 'border-gray-700 bg-[#0f0f0f] text-gray-400 active:border-gray-600'
+                exchangeType === 'usd'
+                  ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-gray-900 dark:text-white'
+                  : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#0f0f0f] text-gray-500 dark:text-gray-400 active:border-gray-400 dark:active:border-gray-600'
               }`}
             >
               <span>🇺🇸</span>
@@ -471,17 +487,17 @@ Contato: ${formatContactForWhatsApp()}`;
             </button>
           </div>
         </div>
-        {lastUpdate && <p className="text-[12px] text-gray-600 text-center w-full">Atualizado {lastUpdate}</p>}
+        {lastUpdate && <p className="text-[12px] text-gray-600 dark:text-gray-600 text-center w-full">Atualizado {lastUpdate}</p>}
       </header>
 
       {/* --- Calculator: mobile first = 1 col, sm+ = 2 col --- */}
       <main className="w-full flex-1 space-y-3">
         
-        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
+        <div className="bg-white dark:bg-gradient-to-br dark:from-[#1a1a1a] dark:to-[#1E1E1E] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 shadow-sm dark:shadow-xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
             {/* BRL Input - altura mínima para toque --- */}
             <div className="relative">
-              <label className="block text-[10px] font-medium text-gray-400 mb-1 uppercase tracking-wider">Você paga (BRL)</label>
+              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Você paga (BRL)</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-base">R$</span>
                 <input
@@ -490,16 +506,16 @@ Contato: ${formatContactForWhatsApp()}`;
                   value={brlInput}
                   onChange={handleBrlChange}
                   placeholder="0,00"
-                  className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-700"
+                  className="w-full bg-gray-50 dark:bg-[#0f0f0f] border-2 border-gray-200 dark:border-gray-800 focus:border-[#2E7D32] text-gray-900 dark:text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-400 dark:placeholder-gray-700"
                 />
                 {brlInput && (
-                  <button onClick={() => { setBrlInput(''); setPygInput(''); setUsdInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-white active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
+                  <button onClick={() => { setBrlInput(''); setPygInput(''); setUsdInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-gray-700 active:bg-gray-200 dark:active:text-white dark:active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
                 )}
               </div>
             </div>
             {/* Receber: PYG ou USD conforme exchangeType */}
             <div className="relative">
-              <label className="block text-[10px] font-medium text-gray-400 mb-1 uppercase tracking-wider">
+              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
                 Você recebe ({exchangeType === 'pyg' ? 'PYG' : 'USD'})
               </label>
               <div className="relative">
@@ -512,10 +528,10 @@ Contato: ${formatContactForWhatsApp()}`;
                       value={pygInput}
                       onChange={handlePygChange}
                       placeholder="0"
-                      className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-700"
+                      className="w-full bg-gray-50 dark:bg-[#0f0f0f] border-2 border-gray-200 dark:border-gray-800 focus:border-[#2E7D32] text-gray-900 dark:text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-400 dark:placeholder-gray-700"
                     />
                     {pygInput && (
-                      <button onClick={() => { setPygInput(''); setBrlInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-white active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
+                      <button onClick={() => { setPygInput(''); setBrlInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-gray-700 active:bg-gray-200 dark:active:text-white dark:active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
                     )}
                   </>
                 ) : (
@@ -526,37 +542,37 @@ Contato: ${formatContactForWhatsApp()}`;
                       value={usdInput}
                       onChange={handleUsdChange}
                       placeholder="0,00"
-                      className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-700"
+                      className="w-full bg-gray-50 dark:bg-[#0f0f0f] border-2 border-gray-200 dark:border-gray-800 focus:border-[#2E7D32] text-gray-900 dark:text-white text-base font-bold min-h-[48px] py-3 pl-12 pr-12 rounded-xl outline-none transition-all placeholder-gray-400 dark:placeholder-gray-700"
                     />
                     {usdInput && (
-                      <button onClick={() => { setUsdInput(''); setBrlInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-white active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
+                      <button onClick={() => { setUsdInput(''); setBrlInput(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 active:text-gray-700 active:bg-gray-200 dark:active:text-white dark:active:bg-gray-800" aria-label="Limpar"><X size={18} /></button>
                     )}
                   </>
                 )}
               </div>
             </div>
           </div>
-          <p className="text-[12px] text-gray-600 mt-2 text-center w-full">
+          <p className="text-[12px] text-gray-600 dark:text-gray-600 mt-2 text-center w-full">
             {exchangeType === 'pyg' ? '* Arredondamento para notas 50k/100k' : exchangeType === 'usd' ? '* Arredondamento para notas de US$ 50/100' : ''}
           </p>
         </div>
 
         {/* Entrega: seletor com lista ao clicar */}
-        <div ref={deliverySelectRef} className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
+        <div ref={deliverySelectRef} className="bg-white dark:bg-gradient-to-br dark:from-[#1a1a1a] dark:to-[#1E1E1E] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 shadow-sm dark:shadow-xl">
           <div className="flex items-center gap-2 mb-3">
             <Truck size={16} className="text-[#2E7D32]" />
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Entrega</span>
+            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entrega</span>
           </div>
           <div className="relative">
             <button
               type="button"
               onClick={() => setDeliverySelectOpen((o) => !o)}
-              className="w-full flex items-center justify-between gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 border-[#2E7D32] bg-[#2E7D32]/10 text-left transition-all touch-manipulation"
+              className="w-full flex items-center justify-between gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 border-[#2E7D32] bg-[#2E7D32]/10 text-left transition-all touch-manipulation text-gray-900 dark:text-white"
               aria-expanded={deliverySelectOpen}
               aria-haspopup="listbox"
             >
               <div className="min-w-0 flex-1 flex items-center gap-2">
-                <span className="text-sm font-bold text-white truncate">
+                <span className="text-sm font-bold truncate">
                   📍 {(DELIVERY_OPTIONS.find((o) => o.id === deliveryType) || DELIVERY_OPTIONS[0]).label}
                 </span>
                 <span className="text-[10px] text-gray-500 shrink-0">
@@ -570,7 +586,7 @@ Contato: ${formatContactForWhatsApp()}`;
             </button>
             {deliverySelectOpen && (
               <ul
-                className="absolute top-full left-0 right-0 mt-2 rounded-xl border-2 border-gray-800 bg-[#0f0f0f] overflow-hidden z-10 shadow-xl"
+                className="absolute top-full left-0 right-0 mt-2 rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f0f0f] overflow-hidden z-10 shadow-xl"
                 role="listbox"
               >
                 {DELIVERY_OPTIONS.map((opt) => (
@@ -581,17 +597,17 @@ Contato: ${formatContactForWhatsApp()}`;
                         setDeliveryType(opt.id);
                         setDeliverySelectOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 min-h-[48px] px-4 py-3 text-left transition-all touch-manipulation border-b border-gray-800 last:border-b-0 ${
-                        deliveryType === opt.id ? 'bg-[#2E7D32]/15' : 'bg-[#0f0f0f] active:bg-gray-800/50'
+                      className={`w-full flex items-center gap-3 min-h-[48px] px-4 py-3 text-left transition-all touch-manipulation border-b border-gray-200 dark:border-gray-800 last:border-b-0 ${
+                        deliveryType === opt.id ? 'bg-[#2E7D32]/15' : 'bg-gray-50 dark:bg-[#0f0f0f] active:bg-gray-200 dark:active:bg-gray-800/50 text-gray-900 dark:text-white'
                       }`}
                     >
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        deliveryType === opt.id ? 'border-[#2E7D32] bg-[#2E7D32]' : 'border-gray-600'
+                        deliveryType === opt.id ? 'border-[#2E7D32] bg-[#2E7D32]' : 'border-gray-400 dark:border-gray-600'
                       }`}>
                         {deliveryType === opt.id && <div className="w-2 h-2 bg-white rounded-full" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-sm font-bold text-white block truncate">📍 {opt.label}</span>
+                        <span className="text-sm font-bold block truncate">📍 {opt.label}</span>
                         <span className="text-[10px] text-gray-500">{opt.subtitle}</span>
                       </div>
                     </button>
@@ -602,21 +618,21 @@ Contato: ${formatContactForWhatsApp()}`;
           </div>
         </div>
 
-        {/* Resumo: sempre visível; cinza sem valor, vermelho/verde com valor --- */}
+        {/* Resumo: sempre visível; cinza sem valor, verde com valor --- */}
         <div className="space-y-3">
-          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
+          <div className="bg-white dark:bg-gradient-to-br dark:from-[#1a1a1a] dark:to-[#1E1E1E] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 shadow-sm dark:shadow-xl">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               {/* VOU RECEBER: primeiro (verde) */}
               <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
                 finalPayBRL > 0 
                   ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/20' 
-                  : 'bg-[#0F0F0F] border border-gray-800'
+                  : 'bg-gray-50 dark:bg-[#0F0F0F] border border-gray-200 dark:border-gray-800'
               }`}>
                 <span className={`text-[9px] font-bold uppercase ${
                   finalPayBRL > 0 ? 'text-[#2E7D32]' : 'text-gray-500'
                 }`}>Vou receber</span>
                 <div className={`text-lg font-black ${
-                  finalPayBRL > 0 ? 'text-white' : 'text-gray-500'
+                  finalPayBRL > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-500'
                 }`}>
                   {finalPayBRL > 0
                     ? (exchangeType === 'pyg' ? formatPYG(finalReceivePYG) : formatUSD(finalReceiveUSD))
@@ -627,13 +643,13 @@ Contato: ${formatContactForWhatsApp()}`;
               <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
                 finalPayBRL > 0 
                   ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/20' 
-                  : 'bg-[#0F0F0F] border border-gray-800'
+                  : 'bg-gray-50 dark:bg-[#0F0F0F] border border-gray-200 dark:border-gray-800'
               }`}>
                 <span className={`text-[9px] font-bold uppercase ${
                   finalPayBRL > 0 ? 'text-[#2E7D32]' : 'text-gray-500'
-                }`}>Valor total</span>
+                }`}>Total + taxas</span>
                 <div className={`text-lg font-black ${
-                  finalPayBRL > 0 ? 'text-white' : 'text-gray-500'
+                  finalPayBRL > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-500'
                 }`}>
                   {finalPayBRL > 0 ? formatBRL(finalPayBRL) : 'R$ 0,00'}
                 </div>
@@ -647,7 +663,7 @@ Contato: ${formatContactForWhatsApp()}`;
             </div>
             {finalPayBRL > 0 && (
               <div className="mb-3">
-                <label className="block text-[10px] font-medium text-gray-400 mb-1 uppercase tracking-wider">Contato (telefone)</label>
+                <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Contato (telefone)</label>
                 <div className="flex gap-2 mb-2">
                   {COUNTRY_CODES.map((country) => (
                     <button
@@ -656,8 +672,8 @@ Contato: ${formatContactForWhatsApp()}`;
                       onClick={() => setContactCountryCode(country.code)}
                       className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 text-sm font-medium transition-all select-none touch-manipulation ${
                         contactCountryCode === country.code
-                          ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-white'
-                          : 'border-gray-800 bg-[#0f0f0f] text-gray-400 active:border-gray-700'
+                          ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-gray-900 dark:text-white'
+                          : 'border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-[#0f0f0f] text-gray-500 dark:text-gray-400 active:border-gray-400 dark:active:border-gray-700'
                       }`}
                     >
                       <span className="text-lg">{country.emoji}</span>
@@ -673,10 +689,10 @@ Contato: ${formatContactForWhatsApp()}`;
                     value={contactPhone}
                     onChange={(e) => setContactPhone(e.target.value)}
                     placeholder={contactCountryCode === '55' ? '99 99999-9999' : '991 123 456'}
-                    className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base py-3 pl-14 pr-4 rounded-xl outline-none transition-all placeholder-gray-600"
+                    className="w-full bg-gray-50 dark:bg-[#0f0f0f] border-2 border-gray-200 dark:border-gray-800 focus:border-[#2E7D32] text-gray-900 dark:text-white text-base py-3 pl-14 pr-4 rounded-xl outline-none transition-all placeholder-gray-400 dark:placeholder-gray-600"
                   />
                 </div>
-                <p className="text-[9px] text-gray-600 mt-1 ml-1">Será enviado como (+{contactCountryCode}…) na mensagem do WhatsApp</p>
+                <p className="text-[9px] text-gray-600 dark:text-gray-600 mt-1 ml-1">Será enviado como (+{contactCountryCode}…) na mensagem do WhatsApp</p>
               </div>
             )}
             {finalPayBRL > 0 ? (
@@ -690,7 +706,7 @@ Contato: ${formatContactForWhatsApp()}`;
                 Pedir no WhatsApp
               </a>
             ) : (
-              <div className="w-full min-h-[48px] bg-[#0F0F0F] border border-gray-800 text-gray-500 font-bold py-3 rounded-xl flex items-center justify-center gap-2 select-none cursor-not-allowed">
+              <div className="w-full min-h-[48px] bg-gray-100 dark:bg-[#0F0F0F] border border-gray-300 dark:border-gray-800 text-gray-400 dark:text-gray-500 font-bold py-3 rounded-xl flex items-center justify-center gap-2 select-none cursor-not-allowed">
                 <Smartphone size={20} />
                 Pedir no WhatsApp
               </div>
@@ -701,13 +717,13 @@ Contato: ${formatContactForWhatsApp()}`;
       </main>
 
       <footer className="mt-4 mb-2 text-center pb-[env(safe-area-inset-bottom)] space-y-1">
-        <p className="text-[10px] text-gray-600">© 2026 Leo Câmbios</p>
+        <p className="text-[10px] text-gray-600 dark:text-gray-600">© 2026 Leo Câmbios</p>
         <p className="text-[10px]">
           <a 
             href="https://luizfilipe.com.br" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="text-gray-500 hover:text-[#2E7D32] transition-colors underline underline-offset-2"
+            className="text-gray-500 dark:text-gray-500 hover:text-[#2E7D32] transition-colors underline underline-offset-2"
           >
             Desenvolvido por luizfilipe.com.br
           </a>
@@ -716,22 +732,22 @@ Contato: ${formatContactForWhatsApp()}`;
 
       {/* --- Admin Modal: mobile first (full width no celular) --- */}
       {isAdminOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-lg p-0 sm:p-4 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 border-2 border-gray-800 border-b-0 sm:border-b-2 shadow-2xl relative max-h-[90vh] overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom)] flex-shrink-0">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 dark:bg-black/90 backdrop-blur-lg p-0 sm:p-4 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gradient-to-br dark:from-[#1a1a1a] dark:to-[#1E1E1E] w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 border-2 border-gray-200 dark:border-gray-800 border-b-0 sm:border-b-2 shadow-2xl relative max-h-[90vh] overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom)] flex-shrink-0">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-[#2E7D32]/10 rounded-full blur-3xl"></div>
             
             <div className="relative z-10">
               {/* Header */}
-              <div className="flex justify-between items-start mb-8">
+              <div className="flex justify-between items-start mb-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-[#2E7D32]/10 rounded-xl">
                       <Settings size={20} className="text-[#2E7D32]" />
                     </div>
-                    <h2 className="text-2xl font-black text-white">Admin</h2>
+                    <h2 className="text-2xl font-black text-gray-900 dark:text-white">Configurações</h2>
                   </div>
-                  <p className="text-xs text-gray-500">Área Administrativa</p>
+                  <p className="text-xs text-gray-500">Tema e área administrativa</p>
                 </div>
                 <button 
                   onClick={() => {
@@ -739,24 +755,57 @@ Contato: ${formatContactForWhatsApp()}`;
                     setIsAuthenticated(false);
                     setAdminPassInput('');
                   }} 
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-gray-800/50 text-gray-400 active:text-white active:bg-gray-800 transition-all"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-gray-200 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 active:bg-gray-300 dark:active:text-white dark:active:bg-gray-800 transition-all"
                   aria-label="Fechar"
                 >
                   <X size={20} />
                 </button>
               </div>
 
+              {/* Tema: Modo escuro / Modo claro */}
+              <div className="mb-6">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 ml-1 uppercase tracking-wider">Tema</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setTheme('dark')}
+                    className={`flex-1 min-h-[48px] flex items-center justify-center gap-2 rounded-xl border-2 text-sm font-bold transition-all touch-manipulation ${
+                      theme === 'dark'
+                        ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-white dark:text-white'
+                        : 'border-gray-700 dark:border-gray-700 bg-gray-100 dark:bg-[#0f0f0f] text-gray-600 dark:text-gray-400'
+                    }`}
+                  >
+                    <Moon size={18} />
+                    Modo escuro
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTheme('light')}
+                    className={`flex-1 min-h-[48px] flex items-center justify-center gap-2 rounded-xl border-2 text-sm font-bold transition-all touch-manipulation ${
+                      theme === 'light'
+                        ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-gray-900 dark:text-white'
+                        : 'border-gray-700 dark:border-gray-700 bg-gray-100 dark:bg-[#0f0f0f] text-gray-600 dark:text-gray-400'
+                    }`}
+                  >
+                    <Sun size={18} />
+                    Modo claro
+                  </button>
+                </div>
+              </div>
+
+              {/* Admin */}
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 ml-1 uppercase tracking-wider">Admin</p>
               {!isAuthenticated ? (
                 <div className="space-y-5">
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-                    <p className="text-sm text-amber-200/80 flex items-center gap-2">
+                    <p className="text-sm text-amber-800 dark:text-amber-200/80 flex items-center gap-2">
                       <span className="text-lg">🔒</span>
                       Digite a senha de administrador para acessar
                     </p>
                   </div>
                   
                   <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-2 ml-1 uppercase tracking-wider">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 ml-1 uppercase tracking-wider">
                       Senha de Acesso
                     </label>
                     <input 
@@ -765,7 +814,7 @@ Contato: ${formatContactForWhatsApp()}`;
                       onChange={(e) => setAdminPassInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
                       placeholder="••••••••"
-                      className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-lg p-4 rounded-2xl outline-none transition-all placeholder-gray-700"
+                      className="w-full bg-gray-50 dark:bg-[#0f0f0f] border-2 border-gray-200 dark:border-gray-800 focus:border-[#2E7D32] text-gray-900 dark:text-white text-lg p-4 rounded-2xl outline-none transition-all placeholder-gray-400 dark:placeholder-gray-700"
                       autoFocus
                     />
                   </div>
@@ -780,7 +829,7 @@ Contato: ${formatContactForWhatsApp()}`;
               ) : (
                 <div className="space-y-5">
                   <div className="bg-[#2E7D32]/10 border border-[#2E7D32]/20 rounded-xl p-4">
-                    <p className="text-sm text-green-200/80 flex items-center gap-2">
+                    <p className="text-sm text-green-800 dark:text-green-200/80 flex items-center gap-2">
                       <span className="text-lg">✓</span>
                       Acesso autorizado
                     </p>
@@ -788,7 +837,7 @@ Contato: ${formatContactForWhatsApp()}`;
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-400 mb-2 ml-1 uppercase tracking-wider">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 ml-1 uppercase tracking-wider">
                         Cotação PYG (₲/R$)
                       </label>
                       <div className="relative">
@@ -799,13 +848,13 @@ Contato: ${formatContactForWhatsApp()}`;
                           value={newRatePygInput}
                           onChange={(e) => setNewRatePygInput(e.target.value)}
                           placeholder="1450"
-                          className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base sm:text-2xl font-bold p-4 pl-14 rounded-2xl outline-none transition-all placeholder-gray-700"
+                          className="w-full bg-gray-50 dark:bg-[#0f0f0f] border-2 border-gray-200 dark:border-gray-800 focus:border-[#2E7D32] text-gray-900 dark:text-white text-base sm:text-2xl font-bold p-4 pl-14 rounded-2xl outline-none transition-all placeholder-gray-400 dark:placeholder-gray-700"
                         />
                       </div>
                       <p className="text-[10px] text-gray-600 mt-2 ml-1">Atual: ₲ {ratePYG != null ? ratePYG : '—'}</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-400 mb-2 ml-1 uppercase tracking-wider">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 ml-1 uppercase tracking-wider">
                         Cotação USD (R$/US$)
                       </label>
                       <div className="relative">
@@ -816,7 +865,7 @@ Contato: ${formatContactForWhatsApp()}`;
                           value={newRateUsdInput}
                           onChange={(e) => setNewRateUsdInput(e.target.value)}
                           placeholder="5,50"
-                          className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base sm:text-2xl font-bold p-4 pl-14 rounded-2xl outline-none transition-all placeholder-gray-700"
+                          className="w-full bg-gray-50 dark:bg-[#0f0f0f] border-2 border-gray-200 dark:border-gray-800 focus:border-[#2E7D32] text-gray-900 dark:text-white text-base sm:text-2xl font-bold p-4 pl-14 rounded-2xl outline-none transition-all placeholder-gray-400 dark:placeholder-gray-700"
                         />
                       </div>
                       <p className="text-[10px] text-gray-600 mt-2 ml-1">Atual: US$ {rateUSD != null ? rateUSD : '—'}</p>
