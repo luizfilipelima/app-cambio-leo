@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Smartphone, Truck, X, Save } from 'lucide-react';
 
 // --- Configuration & Constants ---
-const DEFAULT_RATE = 1450; // Default fallback
 const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || '';
 const WHATSAPP_NUMBER = "595991413975";
+const API_BASE = '/api';
 
 // --- Helper Functions ---
 
@@ -63,8 +63,9 @@ const formatPygInput = (value) => {
 
 export default function App() {
   // --- State ---
-  const [rate, setRate] = useState(DEFAULT_RATE);
-  const [lastUpdate, setLastUpdate] = useState(new Date().toLocaleString());
+  const [rate, setRate] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [rateLoading, setRateLoading] = useState(true);
   
   const [brlInput, setBrlInput] = useState('');
   const [pygInput, setPygInput] = useState('');
@@ -85,12 +86,25 @@ export default function App() {
 
   // --- Effects ---
 
-  // Load from LocalStorage on mount
+  // Carregar cotação do Vercel KV (GET /api/cotacao)
   useEffect(() => {
-    const savedRate = localStorage.getItem('leo_cambios_rate');
-    const savedTime = localStorage.getItem('leo_cambios_time');
-    if (savedRate) setRate(parseFloat(savedRate));
-    if (savedTime) setLastUpdate(savedTime);
+    setRateLoading(true);
+    fetch(`${API_BASE}/cotacao`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data.rate === 'number') {
+          setRate(data.rate);
+          setLastUpdate(data.updatedAt ? new Date(data.updatedAt).toLocaleString() : '');
+        } else {
+          setRate(null);
+          setLastUpdate('');
+        }
+      })
+      .catch(() => {
+        setRate(null);
+        setLastUpdate('');
+      })
+      .finally(() => setRateLoading(false));
   }, []);
 
   // Calculation Effect
@@ -166,7 +180,7 @@ export default function App() {
       setFees(finalFee);
     }
 
-  }, [brlInput, pygInput, rate, deliveryType]);
+  }, [brlInput, pygInput, rate ?? 0, deliveryType]);
 
 
   // --- Handlers ---
@@ -236,23 +250,40 @@ export default function App() {
   const handleAdminLogin = () => {
     if (adminPassInput === ADMIN_PASS) {
       setIsAuthenticated(true);
-      setNewRateInput(rate.toString());
+      setNewRateInput(rate != null ? rate.toString() : '');
     } else {
       alert("Senha incorreta!");
     }
   };
 
-  const handleSaveRate = () => {
+  const handleSaveRate = async () => {
     const newRate = parseFloat(newRateInput);
-    if (newRate > 0) {
-      setRate(newRate);
-      const now = new Date().toLocaleString();
-      setLastUpdate(now);
-      localStorage.setItem('leo_cambios_rate', newRate);
-      localStorage.setItem('leo_cambios_time', now);
+    if (!Number.isFinite(newRate) || newRate <= 0) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/cotacao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rate: newRate, password: adminPassInput }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        alert('Senha incorreta.');
+        return;
+      }
+      if (!res.ok) {
+        alert(data.error || 'Erro ao salvar cotação.');
+        return;
+      }
+
+      setRate(data.rate);
+      setLastUpdate(data.updatedAt ? new Date(data.updatedAt).toLocaleString() : new Date().toLocaleString());
       setIsAdminOpen(false);
       setIsAuthenticated(false);
       setAdminPassInput('');
+    } catch (err) {
+      alert('Erro de conexão. Tente novamente.');
     }
   };
 
@@ -261,7 +292,7 @@ export default function App() {
     const text = `Olá Leo!
 Vou Pagar: ${formatBRL(finalPayBRL)}
 *Vou Receber: ${formatPYG(finalReceivePYG)}*
-Cotação Atual: ₲ ${rate}
+Cotação Atual: ₲ ${rate != null ? rate : '—'}
 Taxas: ${formatBRL(fees)}
 Entrega: ${deliveryType === 'free' ? 'Franco / Lago' : 'Outros Locais'}`;
     
@@ -291,16 +322,24 @@ Entrega: ${deliveryType === 'free' ? 'Franco / Lago' : 'Outros Locais'}`;
             <Settings size={20} />
           </button>
         </div>
-        {/* Cotação: linha inteira no mobile --- */}
+        {/* Cotação: carrega do KV; mostra valor ou Indisponível --- */}
         <div className="flex items-center justify-between gap-2 bg-[#1E1E1E] border border-[#2E7D32]/30 rounded-xl px-4 py-3 w-full">
           <span className="text-sm text-gray-400">Cotação</span>
           <div className="flex items-center gap-2">
-            <span className="text-xl">🇵🇾</span>
-            <span className="text-xl sm:text-2xl font-black text-[#2E7D32]">{rate}</span>
-            <span className="text-[10px] text-gray-500">₲/R$</span>
+            {rateLoading ? (
+              <span className="text-sm text-gray-500">Carregando…</span>
+            ) : rate != null ? (
+              <>
+                <span className="text-xl">🇵🇾</span>
+                <span className="text-xl sm:text-2xl font-black text-[#2E7D32]">{rate}</span>
+                <span className="text-[10px] text-gray-500">₲/R$</span>
+              </>
+            ) : (
+              <span className="text-sm text-gray-500">Indisponível</span>
+            )}
           </div>
         </div>
-        <p className="text-[9px] text-gray-600 text-right w-full">Atualizado {lastUpdate}</p>
+        {lastUpdate && <p className="text-[9px] text-gray-600 text-right w-full">Atualizado {lastUpdate}</p>}
       </header>
 
       {/* --- Calculator: mobile first = 1 col, sm+ = 2 col --- */}
@@ -537,7 +576,7 @@ Entrega: ${deliveryType === 'free' ? 'Franco / Lago' : 'Outros Locais'}`;
                       />
                     </div>
                     <p className="text-[10px] text-gray-600 mt-2 ml-1">
-                      Valor atual: ₲ {rate}
+                      Valor atual: ₲ {rate != null ? rate : '—'}
                     </p>
                   </div>
 
