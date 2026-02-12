@@ -732,8 +732,8 @@ Contato: ${formatContactForWhatsApp()}`;
 
       {/* --- Admin Modal: mobile first (full width no celular) --- */}
       {isAdminOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 dark:bg-black/90 backdrop-blur-lg p-0 sm:p-4 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-gradient-to-br dark:from-[#1a1a1a] dark:to-[#1E1E1E] w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 border-2 border-gray-200 dark:border-gray-800 border-b-0 sm:border-b-2 shadow-2xl relative max-h-[90vh] overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom)] flex-shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 dark:bg-black/90 backdrop-blur-lg p-4 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gradient-to-br dark:from-[#1a1a1a] dark:to-[#1E1E1E] w-full max-w-md rounded-3xl p-6 sm:p-8 border-2 border-gray-200 dark:border-gray-800 shadow-2xl relative max-h-[90vh] overflow-y-auto overflow-x-hidden flex-shrink-0">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-[#2E7D32]/10 rounded-full blur-3xl"></div>
             
