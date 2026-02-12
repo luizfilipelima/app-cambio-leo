@@ -6,6 +6,11 @@ const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || '';
 const WHATSAPP_NUMBER = "595991413975";
 const API_BASE = '/api';
 
+const COUNTRY_CODES = [
+  { code: '55', emoji: '🇧🇷', label: 'Brasil' },
+  { code: '595', emoji: '🇵🇾', label: 'Paraguai' },
+];
+
 // --- Helper Functions ---
 
 // Fee Calculation Logic
@@ -79,6 +84,7 @@ export default function App() {
   const [fees, setFees] = useState(0);
   
   // Contato do cliente (para mensagem WhatsApp)
+  const [contactCountryCode, setContactCountryCode] = useState('55');
   const [contactPhone, setContactPhone] = useState('');
   
   // Admin State
@@ -290,6 +296,13 @@ export default function App() {
     }
   };
 
+  // Formata contato para WhatsApp: (+5543999157589)
+  const formatContactForWhatsApp = () => {
+    const digits = (contactPhone || '').replace(/\D/g, '');
+    if (!digits) return '—';
+    return `(+${contactCountryCode}${digits})`;
+  };
+
   // WhatsApp Link Generator (formato solicitado + Contato)
   const getWhatsAppLink = () => {
     const text = `Olá Leo!
@@ -298,7 +311,7 @@ Vou Trocar: ${formatBRL(finalPayBRL)}
 Cotação Atual: ₲ ${rate != null ? rate : '—'}
 Taxas: ${formatBRL(fees)}
 Entrega: ${deliveryType === 'free' ? 'Franco / Lago' : 'Outros Locais'}
-Contato: ${contactPhone.trim() || '—'}`;
+Contato: ${formatContactForWhatsApp()}`;
     
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
   };
@@ -469,15 +482,35 @@ Contato: ${contactPhone.trim() || '—'}`;
             {finalPayBRL > 0 && (
               <div className="mb-3">
                 <label className="block text-[10px] font-medium text-gray-400 mb-1 uppercase tracking-wider">Contato (telefone)</label>
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                  placeholder="(99) 99999-9999"
-                  className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base py-3 px-4 rounded-xl outline-none transition-all placeholder-gray-600"
-                />
-                <p className="text-[9px] text-gray-600 mt-1 ml-1">Será enviado na mensagem do WhatsApp</p>
+                <div className="flex gap-2 mb-2">
+                  {COUNTRY_CODES.map((country) => (
+                    <button
+                      key={country.code}
+                      type="button"
+                      onClick={() => setContactCountryCode(country.code)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 text-sm font-medium transition-all select-none touch-manipulation ${
+                        contactCountryCode === country.code
+                          ? 'border-[#2E7D32] bg-[#2E7D32]/10 text-white'
+                          : 'border-gray-800 bg-[#0f0f0f] text-gray-400 active:border-gray-700'
+                      }`}
+                    >
+                      <span className="text-lg">{country.emoji}</span>
+                      <span>+{country.code}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-base">+{contactCountryCode}</span>
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder={contactCountryCode === '55' ? '43 99915-7589' : '991 123 456'}
+                    className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base py-3 pl-14 pr-4 rounded-xl outline-none transition-all placeholder-gray-600"
+                  />
+                </div>
+                <p className="text-[9px] text-gray-600 mt-1 ml-1">Será enviado como (+{contactCountryCode}…) na mensagem do WhatsApp</p>
               </div>
             )}
             {finalPayBRL > 0 ? (
