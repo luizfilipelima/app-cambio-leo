@@ -33,6 +33,11 @@ const arredondarParaNotas = (valorPYG) => {
   return Math.round(valorPYG / 50000) * 50000;
 };
 
+// Round to nearest 50 USD (notas de 50 e 100)
+const arredondarParaNotasUSD = (valorUSD) => {
+  return Math.round(valorUSD / 50) * 50;
+};
+
 // Formatting
 const formatBRL = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 const formatPYG = (val) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(val);
@@ -209,26 +214,29 @@ export default function App() {
         let estimatedFee = calcularTaxaServico(rawBrl);
         let netBrl = rawBrl - estimatedFee - deliveryFee;
         if (netBrl < 0) netBrl = 0;
-        const receiveUsd = netBrl * currentRate;
-        let finalTotalBrl = netBrl + deliveryFee;
+        const rawUsd = netBrl * currentRate;
+        const roundedUsd = arredondarParaNotasUSD(rawUsd);
+        const exactNetBrl = roundedUsd / currentRate;
+        let finalTotalBrl = exactNetBrl + deliveryFee;
         finalTotalBrl += calcularTaxaServico(finalTotalBrl);
         const finalFee = calcularTaxaServico(finalTotalBrl);
-        finalTotalBrl = netBrl + finalFee + deliveryFee;
+        finalTotalBrl = exactNetBrl + finalFee + deliveryFee;
         setFinalPayBRL(finalTotalBrl);
         setFinalReceivePYG(0);
-        setFinalReceiveUSD(receiveUsd);
+        setFinalReceiveUSD(roundedUsd);
         setFees(finalFee);
       } else if (usdInput && !brlInput) {
         const rawUsd = parseCurrency(usdInput);
         if (rawUsd === 0) return;
-        const netBrl = rawUsd / currentRate;
+        const roundedUsd = arredondarParaNotasUSD(rawUsd);
+        const netBrl = roundedUsd / currentRate;
         let totalBrl = netBrl + deliveryFee;
         totalBrl += calcularTaxaServico(totalBrl);
         const finalFee = calcularTaxaServico(totalBrl);
         totalBrl = netBrl + finalFee + deliveryFee;
         setFinalPayBRL(totalBrl);
         setFinalReceivePYG(0);
-        setFinalReceiveUSD(rawUsd);
+        setFinalReceiveUSD(roundedUsd);
         setFees(finalFee);
       }
     }
@@ -490,7 +498,9 @@ Contato: ${formatContactForWhatsApp()}`;
               </div>
             </div>
           </div>
-          <p className="text-[9px] text-gray-600 mt-2 ml-1">{exchangeType === 'pyg' ? '* Arredondamento para notas 50k/100k' : ''}</p>
+          <p className="text-[9px] text-gray-600 mt-2 ml-1">
+            {exchangeType === 'pyg' ? '* Arredondamento para notas 50k/100k' : exchangeType === 'usd' ? '* Arredondamento para notas de US$ 50/100' : ''}
+          </p>
         </div>
 
         {/* Entrega: 4 opções, mesma estética */}
