@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Smartphone, Truck, X, Save } from 'lucide-react';
+import { Settings, Smartphone, Truck, X, Save, ChevronDown } from 'lucide-react';
 
 // --- Configuration & Constants ---
 const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || '';
@@ -103,6 +103,8 @@ export default function App() {
 
   // Delivery: 'franco' | 'lago' | 'km4' | 'km7'
   const [deliveryType, setDeliveryType] = useState('franco');
+  const [deliverySelectOpen, setDeliverySelectOpen] = useState(false);
+  const deliverySelectRef = useRef(null);
 
   // Calculated values for display
   const [finalPayBRL, setFinalPayBRL] = useState(0);
@@ -155,6 +157,22 @@ export default function App() {
       })
       .finally(() => setRateLoading(false));
   }, []);
+
+  // Fechar lista de entrega ao clicar fora
+  useEffect(() => {
+    if (!deliverySelectOpen) return;
+    const handleClickOutside = (e) => {
+      if (deliverySelectRef.current && !deliverySelectRef.current.contains(e.target)) {
+        setDeliverySelectOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [deliverySelectOpen]);
 
   // Travar scroll da página quando o modal Admin estiver aberto (card fixo no celular)
   useEffect(() => {
@@ -375,11 +393,15 @@ export default function App() {
       ? `₲ ${ratePYG != null ? ratePYG : '—'}`
       : `US$ ${rateUSD != null ? rateUSD : '—'}`;
     const text = `Olá Leo!
-Vou Trocar: ${formatBRL(finalPayBRL)}
-*Vou Receber: ${receiveText}*
-Cotação Atual: ${cotacaoText}
+
+*Valor total a depositar (já com taxas e entrega):* ${formatBRL(finalPayBRL)}
+
+*Vou receber:* ${receiveText}
+
+Cotação atual: ${cotacaoText}
 Taxas: ${formatBRL(fees)}
 Entrega: ${opt.label} (${opt.fee === 0 ? 'Grátis' : formatBRL(opt.fee)})
+
 Contato: ${formatContactForWhatsApp()}`;
 
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
@@ -519,37 +541,64 @@ Contato: ${formatContactForWhatsApp()}`;
           </p>
         </div>
 
-        {/* Entrega: 4 opções, mesma estética */}
-        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
+        {/* Entrega: seletor com lista ao clicar */}
+        <div ref={deliverySelectRef} className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
           <div className="flex items-center gap-2 mb-3">
             <Truck size={16} className="text-[#2E7D32]" />
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Entrega</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {DELIVERY_OPTIONS.map((opt) => (
-              <label
-                key={opt.id}
-                className={`flex items-center gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 cursor-pointer transition-all select-none touch-manipulation ${
-                  deliveryType === opt.id ? 'border-[#2E7D32] bg-[#2E7D32]/10' : 'border-gray-800 bg-[#0f0f0f] active:border-gray-700'
-                }`}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setDeliverySelectOpen((o) => !o)}
+              className="w-full flex items-center justify-between gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 border-[#2E7D32] bg-[#2E7D32]/10 text-left transition-all touch-manipulation"
+              aria-expanded={deliverySelectOpen}
+              aria-haspopup="listbox"
+            >
+              <div className="min-w-0 flex-1 flex items-center gap-2">
+                <span className="text-sm font-bold text-white truncate">
+                  📍 {(DELIVERY_OPTIONS.find((o) => o.id === deliveryType) || DELIVERY_OPTIONS[0]).label}
+                </span>
+                <span className="text-[10px] text-gray-500 shrink-0">
+                  ({(DELIVERY_OPTIONS.find((o) => o.id === deliveryType) || DELIVERY_OPTIONS[0]).subtitle})
+                </span>
+              </div>
+              <ChevronDown
+                size={20}
+                className={`text-gray-400 shrink-0 transition-transform duration-200 ${deliverySelectOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {deliverySelectOpen && (
+              <ul
+                className="absolute top-full left-0 right-0 mt-2 rounded-xl border-2 border-gray-800 bg-[#0f0f0f] overflow-hidden z-10 shadow-xl"
+                role="listbox"
               >
-                <input
-                  type="radio"
-                  name="delivery"
-                  value={opt.id}
-                  checked={deliveryType === opt.id}
-                  onChange={() => setDeliveryType(opt.id)}
-                  className="sr-only"
-                />
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${deliveryType === opt.id ? 'border-[#2E7D32] bg-[#2E7D32]' : 'border-gray-600'}`}>
-                  {deliveryType === opt.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="text-sm font-bold text-white block truncate">📍 {opt.label}</span>
-                  <span className="text-[10px] text-gray-500">{opt.subtitle}</span>
-                </div>
-              </label>
-            ))}
+                {DELIVERY_OPTIONS.map((opt) => (
+                  <li key={opt.id} role="option" aria-selected={deliveryType === opt.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeliveryType(opt.id);
+                        setDeliverySelectOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 min-h-[48px] px-4 py-3 text-left transition-all touch-manipulation border-b border-gray-800 last:border-b-0 ${
+                        deliveryType === opt.id ? 'bg-[#2E7D32]/15' : 'bg-[#0f0f0f] active:bg-gray-800/50'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        deliveryType === opt.id ? 'border-[#2E7D32] bg-[#2E7D32]' : 'border-gray-600'
+                      }`}>
+                        {deliveryType === opt.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-bold text-white block truncate">📍 {opt.label}</span>
+                        <span className="text-[10px] text-gray-500">{opt.subtitle}</span>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
