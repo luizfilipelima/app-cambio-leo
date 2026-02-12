@@ -443,7 +443,7 @@ Contato: ${formatContactForWhatsApp()}`;
           </button>
         </div>
         {/* Cotação: escolha Guaraní ou Dólar; mostra valor ou Indisponível */}
-        <div className="bg-white dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E7D32]/30 rounded-xl px-4 py-3 w-full space-y-3 shadow-sm dark:shadow-none">
+        <div className="bg-white dark:bg-[#1E1E1E] border border-[#2E7D32]/30 rounded-xl px-4 py-3 w-full space-y-3 shadow-sm dark:shadow-none">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-gray-500 dark:text-gray-400">Cotação</span>
             <div className="flex items-center gap-2">
@@ -625,7 +625,7 @@ Contato: ${formatContactForWhatsApp()}`;
               {/* VOU RECEBER: primeiro (verde) */}
               <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
                 finalPayBRL > 0 
-                  ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/20' 
+                  ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/30' 
                   : 'bg-gray-50 dark:bg-[#0F0F0F] border border-gray-200 dark:border-gray-800'
               }`}>
                 <span className={`text-[9px] font-bold uppercase ${
@@ -642,7 +642,7 @@ Contato: ${formatContactForWhatsApp()}`;
               {/* VALOR TOTAL: segundo (verde, paleta padrão) */}
               <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
                 finalPayBRL > 0 
-                  ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/20' 
+                  ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/30' 
                   : 'bg-gray-50 dark:bg-[#0F0F0F] border border-gray-200 dark:border-gray-800'
               }`}>
                 <span className={`text-[9px] font-bold uppercase ${

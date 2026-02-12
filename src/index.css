@@ -92,8 +92,12 @@
     @apply bg-[#2E7D32] text-white;
   }
 
-  /* Focus visible outline */
+  /* Focus visible outline (mesmo verde do botão #2E7D32) */
   :focus-visible {
-    @apply outline-none ring-2 ring-[#2E7D32] ring-offset-2 ring-offset-[#121212];
+    @apply outline-none ring-2 ring-[#2E7D32] ring-offset-2 ring-offset-gray-100;
+  }
+
+  .dark :focus-visible {
+    @apply ring-offset-[#0F0F0F];
   }
 }
