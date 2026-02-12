@@ -207,6 +207,7 @@ export default function App() {
       return;
     }
 
+    // USD: cotação em R$/US$ (ex.: 5,50 = 1 USD custa 5,50 BRL). BRL→USD = BRL/rate; USD→BRL = USD*rate
     if (exchangeType === 'usd' && currentRate != null) {
       if (brlInput && !usdInput) {
         const rawBrl = parseCurrency(brlInput);
@@ -214,9 +215,9 @@ export default function App() {
         let estimatedFee = calcularTaxaServico(rawBrl);
         let netBrl = rawBrl - estimatedFee - deliveryFee;
         if (netBrl < 0) netBrl = 0;
-        const rawUsd = netBrl * currentRate;
+        const rawUsd = netBrl / currentRate;
         const roundedUsd = arredondarParaNotasUSD(rawUsd);
-        const exactNetBrl = roundedUsd / currentRate;
+        const exactNetBrl = roundedUsd * currentRate;
         let finalTotalBrl = exactNetBrl + deliveryFee;
         finalTotalBrl += calcularTaxaServico(finalTotalBrl);
         const finalFee = calcularTaxaServico(finalTotalBrl);
@@ -229,7 +230,7 @@ export default function App() {
         const rawUsd = parseCurrency(usdInput);
         if (rawUsd === 0) return;
         const roundedUsd = arredondarParaNotasUSD(rawUsd);
-        const netBrl = roundedUsd / currentRate;
+        const netBrl = roundedUsd * currentRate;
         let totalBrl = netBrl + deliveryFee;
         totalBrl += calcularTaxaServico(totalBrl);
         const finalFee = calcularTaxaServico(totalBrl);
@@ -403,7 +404,7 @@ Contato: ${formatContactForWhatsApp()}`;
                 <>
                   <span className="text-xl">{exchangeType === 'pyg' ? '🇵🇾' : '🇺🇸'}</span>
                   <span className="text-xl sm:text-2xl font-black text-[#2E7D32]">{rate}</span>
-                  <span className="text-[10px] text-gray-500">{exchangeType === 'pyg' ? '₲/R$' : 'US$/R$'}</span>
+                  <span className="text-[10px] text-gray-500">{exchangeType === 'pyg' ? '₲/R$' : 'R$/US$'}</span>
                 </>
               ) : (
                 <span className="text-sm text-gray-500">Indisponível</span>
@@ -741,7 +742,7 @@ Contato: ${formatContactForWhatsApp()}`;
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-400 mb-2 ml-1 uppercase tracking-wider">
-                        Cotação USD (US$/R$)
+                        Cotação USD (R$/US$)
                       </label>
                       <div className="relative">
                         <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">US$</span>
