@@ -9,10 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@upstash/redis": "^1.36.2",
     "@vercel/kv": "^3.0.0",
     "lucide-react": "^0.309.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "redis": "^5.10.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.48",
