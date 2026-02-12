@@ -78,8 +78,8 @@ export default function App() {
   const [finalReceivePYG, setFinalReceivePYG] = useState(0);
   const [fees, setFees] = useState(0);
   
-  // Telefone do cliente (para a mensagem do WhatsApp ao admin)
-  const [clientPhone, setClientPhone] = useState('');
+  // Contato do cliente (para mensagem WhatsApp)
+  const [contactPhone, setContactPhone] = useState('');
   
   // Admin State
   const [isAdminOpen, setIsAdminOpen] = useState(false);
@@ -290,16 +290,15 @@ export default function App() {
     }
   };
 
-  // WhatsApp Link Generator (inclui telefone do cliente para o admin encaminhar ao motoboy)
+  // WhatsApp Link Generator (formato solicitado + Contato)
   const getWhatsAppLink = () => {
-    const clienteLinha = clientPhone.trim() ? `Cliente: ${clientPhone.trim()}` : 'Cliente: —';
     const text = `Olá Leo!
-Vou Pagar: ${formatBRL(finalPayBRL)}
+Vou Trocar: ${formatBRL(finalPayBRL)}
 *Vou Receber: ${formatPYG(finalReceivePYG)}*
 Cotação Atual: ₲ ${rate != null ? rate : '—'}
 Taxas: ${formatBRL(fees)}
 Entrega: ${deliveryType === 'free' ? 'Franco / Lago' : 'Outros Locais'}
-${clienteLinha}`;
+Contato: ${contactPhone.trim() || '—'}`;
     
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
   };
@@ -311,7 +310,7 @@ ${clienteLinha}`;
       <header className="w-full flex flex-col gap-3 mb-4 relative">
         <div className="w-full flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-11 h-11 shrink-0 bg-[#2E7D32] rounded-xl flex items-center justify-center">
+            <div className="w-11 h-11 shrink-0 bg-gradient-to-br from-[#2E7D32] to-[#1b5e20] rounded-xl flex items-center justify-center shadow-lg shadow-green-900/20">
               <span className="text-xl">💸</span>
             </div>
             <div className="min-w-0">
@@ -328,7 +327,7 @@ ${clienteLinha}`;
           </button>
         </div>
         {/* Cotação: carrega do KV; mostra valor ou Indisponível --- */}
-        <div className="flex items-center justify-between gap-2 bg-[#0F0F0F] border border-[#2E7D32]/30 rounded-xl px-4 py-3 w-full">
+        <div className="flex items-center justify-between gap-2 bg-[#1E1E1E] border border-[#2E7D32]/30 rounded-xl px-4 py-3 w-full">
           <span className="text-sm text-gray-400">Cotação</span>
           <div className="flex items-center gap-2">
             {rateLoading ? (
@@ -350,7 +349,7 @@ ${clienteLinha}`;
       {/* --- Calculator: mobile first = 1 col, sm+ = 2 col --- */}
       <main className="w-full flex-1 space-y-3">
         
-        <div className="bg-[#0F0F0F] border border-gray-800 rounded-2xl p-4 shadow-xl">
+        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
             {/* BRL Input - altura mínima para toque --- */}
             <div className="relative">
@@ -393,7 +392,7 @@ ${clienteLinha}`;
         </div>
 
         {/* Entrega: mobile first 1 col, sm 2 col; alvo de toque >= 48px */}
-        <div className="bg-[#0F0F0F] border border-gray-800 rounded-2xl p-4 shadow-xl">
+        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
           <div className="flex items-center gap-2 mb-3">
             <Truck size={16} className="text-[#2E7D32]" />
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Entrega</span>
@@ -428,7 +427,7 @@ ${clienteLinha}`;
 
         {/* Resumo: sempre visível; cinza sem valor, vermelho/verde com valor --- */}
         <div className="space-y-3">
-          <div className="bg-[#0F0F0F] border border-gray-800 rounded-2xl p-4 shadow-xl">
+          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               {/* Você Paga: cinza sem valor, vermelho com valor */}
               <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
@@ -469,15 +468,16 @@ ${clienteLinha}`;
             </div>
             {finalPayBRL > 0 && (
               <div className="mb-3">
-                <label className="block text-[10px] font-medium text-gray-400 mb-1 ml-1">Seu WhatsApp (para o pedido)</label>
+                <label className="block text-[10px] font-medium text-gray-400 mb-1 uppercase tracking-wider">Contato (telefone)</label>
                 <input
                   type="tel"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="Ex: 55 11 99999-9999"
-                  className="w-full bg-[#0F0F0F] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base py-3 px-4 rounded-xl outline-none transition-all placeholder-gray-600"
+                  inputMode="tel"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  placeholder="(99) 99999-9999"
+                  className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base py-3 px-4 rounded-xl outline-none transition-all placeholder-gray-600"
                 />
-                <p className="text-[9px] text-gray-600 mt-1 ml-1">O Leo verá seu número na mensagem para encaminhar ao motoboy.</p>
+                <p className="text-[9px] text-gray-600 mt-1 ml-1">Será enviado na mensagem do WhatsApp</p>
               </div>
             )}
             {finalPayBRL > 0 ? (
@@ -501,14 +501,14 @@ ${clienteLinha}`;
 
       </main>
 
-      <footer className="mt-4 mb-2 text-center pb-[env(safe-area-inset-bottom)]">
-        <p className="text-[10px] text-gray-600">
-          © 2026 Leo Câmbios ·{' '}
-          <a
-            href="https://luizfilipe.com.br"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-500 hover:text-white underline transition-colors"
+      <footer className="mt-4 mb-2 text-center pb-[env(safe-area-inset-bottom)] space-y-1">
+        <p className="text-[10px] text-gray-600">© 2026 Leo Câmbios</p>
+        <p className="text-[10px]">
+          <a 
+            href="https://luizfilipe.com.br" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-gray-500 hover:text-[#2E7D32] transition-colors underline underline-offset-2"
           >
             Desenvolvido por luizfilipe.com.br
           </a>
@@ -518,7 +518,9 @@ ${clienteLinha}`;
       {/* --- Admin Modal: mobile first (full width no celular) --- */}
       {isAdminOpen && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-lg flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-[#0F0F0F] w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 border-2 border-gray-800 border-b-0 sm:border-b-2 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 border-2 border-gray-800 border-b-0 sm:border-b-2 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-[#2E7D32]/10 rounded-full blur-3xl"></div>
             
             <div className="relative z-10">
               {/* Header */}
@@ -571,7 +573,7 @@ ${clienteLinha}`;
 
                   <button 
                     onClick={handleAdminLogin}
-                    className="w-full min-h-[48px] bg-[#2E7D32] active:bg-[#1b5e20] text-white font-bold py-4 rounded-2xl transition-all duration-300 active:scale-[0.98] touch-manipulation"
+                    className="w-full min-h-[48px] bg-gradient-to-r from-[#2E7D32] to-[#1b5e20] active:from-[#1b5e20] active:to-[#2E7D32] text-white font-bold py-4 rounded-2xl transition-all duration-300 active:scale-[0.98] shadow-lg shadow-green-900/30 touch-manipulation"
                   >
                     Autenticar
                   </button>
@@ -608,7 +610,7 @@ ${clienteLinha}`;
 
                   <button 
                     onClick={handleSaveRate}
-                    className="w-full min-h-[48px] bg-[#2E7D32] active:bg-[#1b5e20] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] touch-manipulation"
+                    className="w-full min-h-[48px] bg-gradient-to-r from-[#2E7D32] to-[#1b5e20] active:from-[#1b5e20] active:to-[#2E7D32] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] shadow-lg shadow-green-900/30 touch-manipulation"
                   >
                     <Save size={18} />
                     Salvar e Atualizar
