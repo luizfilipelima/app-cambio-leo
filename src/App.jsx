@@ -606,22 +606,7 @@ Contato: ${formatContactForWhatsApp()}`;
         <div className="space-y-3">
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] border border-gray-800 rounded-2xl p-4 shadow-xl">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-              {/* Você Paga: cinza sem valor, vermelho com valor */}
-              <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
-                finalPayBRL > 0 
-                  ? 'bg-red-500/10 border border-red-500/20' 
-                  : 'bg-[#0F0F0F] border border-gray-800'
-              }`}>
-                <span className={`text-[9px] font-bold uppercase ${
-                  finalPayBRL > 0 ? 'text-red-400' : 'text-gray-500'
-                }`}>Você Paga</span>
-                <div className={`text-lg font-black ${
-                  finalPayBRL > 0 ? 'text-white' : 'text-gray-500'
-                }`}>
-                  {finalPayBRL > 0 ? formatBRL(finalPayBRL) : 'R$ 0,00'}
-                </div>
-              </div>
-              {/* Você Recebe: cinza sem valor, verde com valor (PYG ou USD) */}
+              {/* VOU RECEBER: primeiro (verde) */}
               <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
                 finalPayBRL > 0 
                   ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/20' 
@@ -629,13 +614,28 @@ Contato: ${formatContactForWhatsApp()}`;
               }`}>
                 <span className={`text-[9px] font-bold uppercase ${
                   finalPayBRL > 0 ? 'text-[#2E7D32]' : 'text-gray-500'
-                }`}>Você Recebe</span>
+                }`}>Vou receber</span>
                 <div className={`text-lg font-black ${
                   finalPayBRL > 0 ? 'text-white' : 'text-gray-500'
                 }`}>
                   {finalPayBRL > 0
                     ? (exchangeType === 'pyg' ? formatPYG(finalReceivePYG) : formatUSD(finalReceiveUSD))
                     : (exchangeType === 'pyg' ? '₲ 0' : 'US$ 0,00')}
+                </div>
+              </div>
+              {/* VALOR TOTAL: segundo (vermelho) */}
+              <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
+                finalPayBRL > 0 
+                  ? 'bg-red-500/10 border border-red-500/20' 
+                  : 'bg-[#0F0F0F] border border-gray-800'
+              }`}>
+                <span className={`text-[9px] font-bold uppercase ${
+                  finalPayBRL > 0 ? 'text-red-400' : 'text-gray-500'
+                }`}>Valor total</span>
+                <div className={`text-lg font-black ${
+                  finalPayBRL > 0 ? 'text-white' : 'text-gray-500'
+                }`}>
+                  {finalPayBRL > 0 ? formatBRL(finalPayBRL) : 'R$ 0,00'}
                 </div>
               </div>
             </div>
