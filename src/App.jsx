@@ -506,7 +506,7 @@ Contato: ${formatContactForWhatsApp()}`;
                     inputMode="tel"
                     value={contactPhone}
                     onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder={contactCountryCode === '55' ? '43 99915-7589' : '991 123 456'}
+                    placeholder={contactCountryCode === '55' ? '99 99999-9999' : '991 123 456'}
                     className="w-full bg-[#0f0f0f] border-2 border-gray-800 focus:border-[#2E7D32] text-white text-base py-3 pl-14 pr-4 rounded-xl outline-none transition-all placeholder-gray-600"
                   />
                 </div>
