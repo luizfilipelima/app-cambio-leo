@@ -471,7 +471,7 @@ Contato: ${formatContactForWhatsApp()}`;
             </button>
           </div>
         </div>
-        {lastUpdate && <p className="text-[11px] text-gray-600 text-center w-full">Atualizado {lastUpdate}</p>}
+        {lastUpdate && <p className="text-[12px] text-gray-600 text-center w-full">Atualizado {lastUpdate}</p>}
       </header>
 
       {/* --- Calculator: mobile first = 1 col, sm+ = 2 col --- */}
@@ -536,7 +536,7 @@ Contato: ${formatContactForWhatsApp()}`;
               </div>
             </div>
           </div>
-          <p className="text-[11px] text-gray-600 mt-2 text-center w-full">
+          <p className="text-[12px] text-gray-600 mt-2 text-center w-full">
             {exchangeType === 'pyg' ? '* Arredondamento para notas 50k/100k' : exchangeType === 'usd' ? '* Arredondamento para notas de US$ 50/100' : ''}
           </p>
         </div>
@@ -623,14 +623,14 @@ Contato: ${formatContactForWhatsApp()}`;
                     : (exchangeType === 'pyg' ? '₲ 0' : 'US$ 0,00')}
                 </div>
               </div>
-              {/* VALOR TOTAL: segundo (vermelho) */}
+              {/* VALOR TOTAL: segundo (verde, paleta padrão) */}
               <div className={`rounded-xl p-4 min-h-[60px] flex flex-col justify-center transition-colors ${
                 finalPayBRL > 0 
-                  ? 'bg-red-500/10 border border-red-500/20' 
+                  ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/20' 
                   : 'bg-[#0F0F0F] border border-gray-800'
               }`}>
                 <span className={`text-[9px] font-bold uppercase ${
-                  finalPayBRL > 0 ? 'text-red-400' : 'text-gray-500'
+                  finalPayBRL > 0 ? 'text-[#2E7D32]' : 'text-gray-500'
                 }`}>Valor total</span>
                 <div className={`text-lg font-black ${
                   finalPayBRL > 0 ? 'text-white' : 'text-gray-500'
@@ -639,7 +639,7 @@ Contato: ${formatContactForWhatsApp()}`;
                 </div>
               </div>
             </div>
-            <div className={`flex justify-between text-[11px] mb-3 ${
+            <div className={`flex justify-between text-[12px] mb-3 ${
               finalPayBRL > 0 ? 'text-gray-500' : 'text-gray-600'
             }`}>
               <span>Taxa: {finalPayBRL > 0 ? formatBRL(fees) : '—'}</span>
