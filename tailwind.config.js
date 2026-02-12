@@ -8,7 +8,7 @@ export default {
     extend: {
       colors: {
         cambio: {
-          bg: '#121212',
+          bg: '#0F0F0F',
           card: '#1E1E1E',
           input: '#262730',
           accent: '#2E7D32',

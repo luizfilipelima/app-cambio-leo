@@ -156,6 +156,21 @@ export default function App() {
       .finally(() => setRateLoading(false));
   }, []);
 
+  // Travar scroll da página quando o modal Admin estiver aberto (card fixo no celular)
+  useEffect(() => {
+    if (isAdminOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [isAdminOpen]);
+
   // Calculation Effect (PYG ou USD conforme exchangeType)
   useEffect(() => {
     const currentRate = exchangeType === 'pyg' ? ratePYG : rateUSD;
@@ -371,7 +386,7 @@ Contato: ${formatContactForWhatsApp()}`;
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#0F0F0F] text-white font-sans flex flex-col items-center px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-lg mx-auto">
+    <div className="min-h-screen min-h-[100dvh] bg-cambio-bg text-white font-sans flex flex-col items-center px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-lg mx-auto">
       
       {/* --- Header: mobile first (empilha em telas pequenas) --- */}
       <header className="w-full flex flex-col gap-3 mb-4 relative">
@@ -530,7 +545,7 @@ Contato: ${formatContactForWhatsApp()}`;
                   {deliveryType === opt.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="text-sm font-bold text-white block truncate">{opt.label}</span>
+                  <span className="text-sm font-bold text-white block truncate">📍 {opt.label}</span>
                   <span className="text-[10px] text-gray-500">{opt.subtitle}</span>
                 </div>
               </label>
@@ -652,8 +667,8 @@ Contato: ${formatContactForWhatsApp()}`;
 
       {/* --- Admin Modal: mobile first (full width no celular) --- */}
       {isAdminOpen && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-lg flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 border-2 border-gray-800 border-b-0 sm:border-b-2 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-lg p-0 sm:p-4 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#1E1E1E] w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 border-2 border-gray-800 border-b-0 sm:border-b-2 shadow-2xl relative max-h-[90vh] overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom)] flex-shrink-0">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-[#2E7D32]/10 rounded-full blur-3xl"></div>
             
