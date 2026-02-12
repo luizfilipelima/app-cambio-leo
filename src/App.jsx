@@ -471,7 +471,7 @@ Contato: ${formatContactForWhatsApp()}`;
             </button>
           </div>
         </div>
-        {lastUpdate && <p className="text-[9px] text-gray-600 text-right w-full">Atualizado {lastUpdate}</p>}
+        {lastUpdate && <p className="text-[11px] text-gray-600 text-center w-full">Atualizado {lastUpdate}</p>}
       </header>
 
       {/* --- Calculator: mobile first = 1 col, sm+ = 2 col --- */}
@@ -536,7 +536,7 @@ Contato: ${formatContactForWhatsApp()}`;
               </div>
             </div>
           </div>
-          <p className="text-[9px] text-gray-600 mt-2 ml-1">
+          <p className="text-[11px] text-gray-600 mt-2 text-center w-full">
             {exchangeType === 'pyg' ? '* Arredondamento para notas 50k/100k' : exchangeType === 'usd' ? '* Arredondamento para notas de US$ 50/100' : ''}
           </p>
         </div>
@@ -639,7 +639,7 @@ Contato: ${formatContactForWhatsApp()}`;
                 </div>
               </div>
             </div>
-            <div className={`flex justify-between text-[10px] mb-3 ${
+            <div className={`flex justify-between text-[11px] mb-3 ${
               finalPayBRL > 0 ? 'text-gray-500' : 'text-gray-600'
             }`}>
               <span>Taxa: {finalPayBRL > 0 ? formatBRL(fees) : '—'}</span>
