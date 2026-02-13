@@ -115,6 +115,7 @@ export default function App() {
   // Contato do cliente (para mensagem WhatsApp)
   const [contactCountryCode, setContactCountryCode] = useState('55');
   const [contactPhone, setContactPhone] = useState('');
+  const [contactName, setContactName] = useState('');
 
   // Admin State
   const [isAdminOpen, setIsAdminOpen] = useState(false);
@@ -407,6 +408,7 @@ Cotação atual: ${cotacaoText}
 Taxas: ${formatBRL(fees)}
 Entrega: ${opt.label} (${opt.fee === 0 ? 'Grátis' : formatBRL(opt.fee)})
 
+Nome: ${(contactName || '').trim() || '—'}
 Contato: ${formatContactForWhatsApp()}`;
 
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
@@ -686,6 +688,19 @@ Contato: ${formatContactForWhatsApp()}`;
                   />
                 </div>
                 <p className="text-[9px] text-gray-600 dark:text-gray-600 mt-1 ml-1">Será enviado como (+{contactCountryCode}…) na mensagem do WhatsApp</p>
+              </div>
+            )}
+            {finalPayBRL > 0 && (
+              <div className="mb-3">
+                <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Nome</label>
+                <input
+                  type="text"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  placeholder="Seu nome"
+                  className="w-full bg-gray-50 dark:bg-[#0f0f0f] border-2 border-gray-200 dark:border-gray-800 focus:border-[#2E7D32] text-gray-900 dark:text-white text-base py-3 px-4 rounded-xl outline-none transition-all placeholder-gray-400 dark:placeholder-gray-600"
+                />
+                <p className="text-[9px] text-gray-600 dark:text-gray-600 mt-1 ml-1">Será enviado na mensagem do WhatsApp</p>
               </div>
             )}
             {finalPayBRL > 0 ? (
