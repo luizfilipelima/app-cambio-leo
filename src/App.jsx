@@ -728,7 +728,7 @@ Contato: ${formatContactForWhatsApp()}`;
         <p className="text-[10px] text-gray-600 dark:text-gray-600">© 2026 Leo Câmbios</p>
         <p className="text-[10px]">
           <a 
-            href="https://luizfilipe.com.br" 
+            href="https://wa.me/5575992776610" 
             target="_blank" 
             rel="noopener noreferrer" 
             className="text-gray-500 dark:text-gray-500 hover:text-[#2E7D32] transition-colors underline underline-offset-2"
